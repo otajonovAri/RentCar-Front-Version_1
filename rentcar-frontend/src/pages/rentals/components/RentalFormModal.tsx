@@ -162,7 +162,7 @@ export default function RentalFormModal({ open, onClose, onSuccess, prefilledCar
                   <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>{c.licensePlate}</Tag>
                     <Tag
-                      color={c.status === 'Available' ? 'green' : c.status === 'Active' ? 'processing' : 'default'}
+                      color={c.status === 'Available' ? 'green' : c.status === 'Reserved' ? 'processing' : 'default'}
                       style={{ margin: 0, fontSize: 11 }}
                     >
                       {c.dailyRate.toLocaleString()} so'm/kun
@@ -283,7 +283,7 @@ export default function RentalFormModal({ open, onClose, onSuccess, prefilledCar
               disabledDate={(d) => d && d.isBefore(dayjs(), 'day')}
               format="DD.MM.YYYY"
               placeholder={['Boshlanish sanasi', 'Tugash sanasi']}
-              needsConfirm={false}
+              needConfirm={false}
               getPopupContainer={() => document.body}
               popupStyle={{ zIndex: 2000 }}
             />

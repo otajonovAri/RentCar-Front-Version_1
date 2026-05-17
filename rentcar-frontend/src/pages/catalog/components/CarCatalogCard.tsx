@@ -154,7 +154,7 @@ export default function CarCatalogCard({ car }: Props) {
             {name.toUpperCase()}
           </div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>
-            {car.category ?? 'Sedan'}
+            {car.categoryName ?? 'Sedan'}
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@ export default function CarCatalogCard({ car }: Props) {
           {[
             { icon: <SettingOutlined style={{ fontSize: 10 }} />, label: TRANSMISSION_LABEL[car.transmissionType] },
             { icon: <TeamOutlined    style={{ fontSize: 10 }} />, label: `${car.seatCount} o'rin` },
-            { icon: <ThunderboltFilled style={{ fontSize: 10, color: '#fa8c16' }} />, label: car.fuelType ?? 'Benzin' },
+            { icon: <ThunderboltFilled style={{ fontSize: 10, color: '#fa8c16' }} />, label: 'Benzin' },
           ].map((spec, i) => (
             <span key={i} style={{
               display:      'inline-flex',

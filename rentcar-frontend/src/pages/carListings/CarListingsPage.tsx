@@ -527,7 +527,7 @@ export default function CarListingsPage() {
               min={0} step={10000} style={{ width: '100%', borderRadius: 8 }}
               size="large" addonAfter="so'm/kun"
               formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={v => v!.replace(/,/g, '') as unknown as number}
+              parser={v => v!.replace(/,/g, '') as unknown as 0}
             />
           </Form.Item>
           <Form.Item

@@ -59,8 +59,6 @@ function StatusChip({ status }: { status: OwnerPayoutStatus }) {
   )
 }
 
-const STATUSES: OwnerPayoutStatus[] = ['Pending', 'Processing', 'Paid', 'Failed', 'OnHold']
-
 export default function OwnerPayoutsPage() {
   const { token }  = theme.useToken()
   const screens    = Grid.useBreakpoint()
@@ -535,7 +533,6 @@ function PayoutCard({
 }) {
   const [hovered, setHovered] = useState(false)
   const pal = ownerPalette(payout.ownerId)
-  const cfg = STATUS_CFG[payout.status]
   const canMark = payout.status === 'Pending' || payout.status === 'Processing'
 
   return (

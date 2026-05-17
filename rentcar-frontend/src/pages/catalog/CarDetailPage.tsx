@@ -83,10 +83,6 @@ export default function CarDetailPage() {
     if (!userProfile.dateOfBirth)   missingFields.push("Tug'ilgan sana")
     if (!userProfile.licenseNumber) missingFields.push("Haydovchilik guvohnomasi")
   }
-  const isProfileComplete = isAuthenticated
-    ? (userProfile ? missingFields.length === 0 : null) // null = hali yuklanmagan
-    : false
-
   /** Ijara/Bron tugmasi bosilganda universal tekshiruv */
   const handleBookingClick = async (type: 'rental' | 'reservation') => {
     // 1. Autentifikatsiya tekshiruvi
@@ -627,8 +623,6 @@ export default function CarDetailPage() {
 
 // ── Styles — badge is defined as a function to access token ────────────────────
 // (see badgeStyle() helper used in JSX)
-const badge: React.CSSProperties = {}   // unused placeholder — replaced by badgeStyle(token)
-
 function badgeStyle(token: ReturnType<typeof theme.useToken>['token']): React.CSSProperties {
   return {
     padding:      '6px 12px',

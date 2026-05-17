@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Button, Modal, Form, Input, InputNumber, DatePicker,
-  Select, message, Spin, Grid, theme, Divider, Popconfirm,
+  Select, message, Spin, Grid, theme, Divider,
 } from 'antd'
 import {
   PlusOutlined, SafetyCertificateFilled, BankFilled,
   PhoneOutlined, MailOutlined, GlobalOutlined, EnvironmentOutlined,
-  CarFilled, CalendarOutlined, DollarCircleFilled,
+  CalendarOutlined, DollarCircleFilled,
   CheckCircleFilled, CloseCircleFilled, FileProtectOutlined,
   TagOutlined,
 } from '@ant-design/icons'
@@ -456,7 +456,7 @@ export default function InsurancePage() {
               <InputNumber
                 min={0} style={{ width: '100%', borderRadius: 8 }} size="large"
                 formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={v => v!.replace(/,/g, '') as unknown as number}
+                parser={v => v!.replace(/,/g, '') as unknown as 0}
               />
             </Form.Item>
             <Form.Item
@@ -467,7 +467,7 @@ export default function InsurancePage() {
               <InputNumber
                 min={0} style={{ width: '100%', borderRadius: 8 }} size="large"
                 formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={v => v!.replace(/,/g, '') as unknown as number}
+                parser={v => v!.replace(/,/g, '') as unknown as 0}
               />
             </Form.Item>
           </div>

@@ -5,7 +5,7 @@ import {
 } from 'antd'
 import {
   CheckOutlined, CloseOutlined, PlayCircleOutlined, DollarOutlined,
-  CarFilled, FileImageOutlined, WarningOutlined,
+  CarFilled, CarOutlined, FileImageOutlined, WarningOutlined,
   CalendarFilled, ClockCircleFilled, EnvironmentOutlined,
   TeamOutlined, TagsOutlined, CheckCircleFilled,
 } from '@ant-design/icons'

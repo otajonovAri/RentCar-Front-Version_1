@@ -19,6 +19,7 @@ export interface RentalDto {
   returnBranch: string | null
   driverName: string | null
   promotionCode: string | null
+  notes: string | null
   createdAt: string
 }
 

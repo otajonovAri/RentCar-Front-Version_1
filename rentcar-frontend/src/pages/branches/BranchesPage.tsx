@@ -3,15 +3,12 @@ import { Button, Select, theme, Spin, Grid } from 'antd'
 import {
   PlusOutlined, EditOutlined, PhoneOutlined,
   CarFilled, EnvironmentFilled, BankFilled,
-  GlobalOutlined,
 } from '@ant-design/icons'
 import { branchesApi } from '@/api/branchesApi'
 import type { BranchDto } from '@/types/branches'
 import BranchFormModal from './components/BranchFormModal'
 import { useAuthStore } from '@/store/authStore'
 import { useRegions, useCities } from '@/hooks/useLookups'
-
-const { useBreakpoint } = Grid
 
 // Stable color from string
 const PALETTE = [

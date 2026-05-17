@@ -138,7 +138,7 @@ export default function FineFormModal({ open, onClose, onSuccess }: Props) {
             size="large"
             optionLabelProp="label"
             getPopupContainer={() => document.body}
-            popupStyle={{ zIndex:2000 }}
+            styles={{ popup: { root: { zIndex: 2000 } } }}
           >
             {filteredRentals.map(r => {
               const st = STATUS_LABEL[r.status] ?? { label: r.status, color:'default' }
@@ -225,7 +225,7 @@ export default function FineFormModal({ open, onClose, onSuccess }: Props) {
             style={{ width:'100%', borderRadius:8 }}
             size="large"
             formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-            parser={v => Number(v!.replace(/\s/g, ''))}
+            parser={v => Number(v!.replace(/\s/g, '')) as unknown as 0}
             placeholder="100 000"
             addonAfter="so'm"
           />

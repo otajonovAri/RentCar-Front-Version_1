@@ -6,7 +6,7 @@ import {
   DollarCircleFilled, FileTextFilled, AppstoreFilled, ShopFilled,
   CrownFilled, ThunderboltFilled, TagsFilled, TeamOutlined,
   BranchesOutlined, GlobalOutlined, EnvironmentOutlined,
-  UnorderedListOutlined, AuditOutlined, PercentageOutlined, UserOutlined,
+  UnorderedListOutlined, AuditOutlined, PercentageOutlined,
   SolutionOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'

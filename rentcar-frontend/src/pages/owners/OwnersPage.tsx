@@ -3,7 +3,7 @@ import { Button, Input, Modal, Form, Select, message, Spin, Grid, theme } from '
 import { CrownFilled, PlusOutlined, EditOutlined, CheckCircleOutlined, SearchOutlined } from '@ant-design/icons'
 import api from '@/api/axiosInstance'
 import { ownersApi } from '@/api/ownersApi'
-import type { OwnerDto, CreateOwnerProfileDto, UpdateOwnerProfileDto } from '@/types/owners'
+import type { OwnerDto } from '@/types/owners'
 import type { PaginatedResponse } from '@/types/common'
 import { usePagination } from '@/hooks/usePagination'
 import { useAuthStore } from '@/store/authStore'
@@ -190,7 +190,7 @@ export default function OwnersPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<OwnerDto | null>(null)
   const [saving, setSaving] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const [, setVerifying] = useState(false)
   const [form] = Form.useForm()
   const [ownerUsers, setOwnerUsers] = useState<Array<{ id: number; fullName: string; email: string }>>([])
   const [usersLoading, setUsersLoading] = useState(false)

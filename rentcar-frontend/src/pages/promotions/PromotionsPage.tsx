@@ -716,7 +716,7 @@ export default function PromotionsPage() {
               style={{ width:'100%', borderRadius:8 }} size="large"
               placeholder="500 000"
               formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-              parser={v => Number(v!.replace(/\s/g, ''))}
+              parser={v => Number(v!.replace(/\s/g, '')) as unknown as 0}
             />
           </Form.Item>
 

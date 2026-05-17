@@ -46,7 +46,7 @@ export default function SuhbatlarPage() {
   const { token }            = theme.useToken()
   const screens              = Grid.useBreakpoint()
   const isMobile             = !screens.md
-  const { userId, fullName } = useAuthStore()
+  const { userId } = useAuthStore()
   const [conversations, setConversations] = useState<ConversationDto[]>([])
   const [loading, setLoading]             = useState(false)
   const [statusFilter, setStatusFilter]   = useState<ConversationStatus | 'all'>('all')
@@ -269,7 +269,6 @@ export default function SuhbatlarPage() {
           />
         ) : (
           filteredConvs.map(conv => {
-            const cfg      = STATUS_CONFIG[conv.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.Open
             const isActive = conv.id === activeId
             const hasUnread = conv.unreadCount > 0
             const lastTime  = conv.lastMessageAt ?? conv.createdAt

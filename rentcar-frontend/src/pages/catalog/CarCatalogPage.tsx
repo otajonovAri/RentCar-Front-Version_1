@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Spin, Empty, theme, Grid, Input } from 'antd'
+import { Spin, theme, Grid, Input } from 'antd'
 import {
   CarFilled, SearchOutlined, FireFilled,
   ThunderboltFilled, AppstoreFilled,
