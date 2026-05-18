@@ -21,13 +21,9 @@ const schema = z
     firstName:       z.string().min(2, 'Kamida 2 ta belgi'),
     lastName:        z.string().min(2, 'Kamida 2 ta belgi'),
     email:           z.string().email("To'g'ri email kiriting"),
-    phoneNumber:     z.string().regex(/^\+998\d{9}$/, 'Format: +998901234567'),
+    phoneNumber:     z.string().min(9, "Telefon raqam kiritilishi shart"),
     dateOfBirth:     z.string().min(1, "Tug'ilgan sana kiritilishi shart"),
-    password:        z
-      .string()
-      .min(8, 'Kamida 8 ta belgi')
-      .regex(/[A-Z]/, 'Kamida 1 ta katta harf')
-      .regex(/[0-9]/, 'Kamida 1 ta raqam'),
+    password:        z.string().min(6, 'Kamida 6 ta belgi'),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -207,7 +203,7 @@ export default function RegisterPage() {
             <div>
               <DatePicker
                 style={{ width: '100%', borderRadius: 8 }} size="large"
-                format="DD.MM.YYYY" placeholder="Tug'ilgan sana (katta yoshdagilar)"
+                format="DD.MM.YYYY" placeholder="Tug'ilgan sana"
                 status={fe('DateOfBirth', errors.dateOfBirth?.message) ? 'error' : ''}
                 disabledDate={(d: Dayjs) => d && d.isAfter(new Date())}
                 onChange={(date: Dayjs | null) =>
@@ -225,7 +221,7 @@ export default function RegisterPage() {
           <Controller name="password" control={control} render={({ field }) => (
             <div>
               <Input.Password {...field} prefix={<LockOutlined style={ic}/>}
-                placeholder="Parol (katta harf + raqam)" size="large"
+                placeholder="Parol (kamida 6 belgi)" size="large"
                 status={fe('Password', errors.password?.message) ? 'error' : ''}
                 style={{ borderRadius: 8 }} />
               {fe('Password', errors.password?.message) && (

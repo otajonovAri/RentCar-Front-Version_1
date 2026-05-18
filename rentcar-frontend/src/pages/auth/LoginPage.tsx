@@ -16,7 +16,7 @@ const { Title, Text } = Typography
 
 const loginSchema = z.object({
   email:    z.string().email("To'g'ri email kiriting"),
-  password: z.string().min(6, 'Kamida 6 ta belgi'),
+  password: z.string().min(1, 'Parol kiritilishi shart'),
 })
 type LoginForm = z.infer<typeof loginSchema>
 
