@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Input, Button, Typography, Alert, Row, Col, DatePicker } from 'antd'
 import {
-  MailOutlined, LockOutlined, UserOutlined,
-  PhoneOutlined, CheckCircleOutlined,
+  MailOutlined, LockOutlined, UserOutlined, PhoneOutlined,
 } from '@ant-design/icons'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { Dayjs } from 'dayjs'
 import { authApi } from '@/api/authApi'
+import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import type { ApiError } from '@/types/auth'
 import { AxiosError } from 'axios'
@@ -38,12 +38,13 @@ const schema = z
 type RegisterForm = z.infer<typeof schema>
 
 export default function RegisterPage() {
-  const isDark      = useThemeStore((s) => s.isDark)
-  const navigate    = useNavigate()
-  const [serverError, setServerError]       = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors]       = useState<Record<string, string[]>>({})
-  const [loading,     setLoading]           = useState(false)
-  const [registered,  setRegistered]        = useState<string | null>(null)
+  const navigate   = useNavigate()
+  const setAuth    = useAuthStore((s) => s.setAuth)
+  const isDark     = useThemeStore((s) => s.isDark)
+
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
+  const [loading,     setLoading]     = useState(false)
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(schema),
@@ -57,7 +58,7 @@ export default function RegisterPage() {
   const onSubmit = async (v: RegisterForm) => {
     setServerError(null); setFieldErrors({}); setLoading(true)
     try {
-      await authApi.register({
+      const { data } = await authApi.register({
         firstName:   v.firstName,
         lastName:    v.lastName,
         email:       v.email,
@@ -65,7 +66,21 @@ export default function RegisterPage() {
         dateOfBirth: v.dateOfBirth,
         password:    v.password,
       })
-      setRegistered(v.email)
+
+      // Avtomatik login — to'g'ridan-to'g'ri dashboard/my-rentals ga
+      setAuth({
+        accessToken:  data.accessToken,
+        refreshToken: data.refreshToken,
+        userId:       data.userId,
+        fullName:     data.fullName,
+        email:        data.email,
+        role:         data.role,
+      })
+
+      navigate(
+        data.role === 'Customer' || data.role === 'Owner' ? '/my-rentals' : '/dashboard',
+        { replace: true },
+      )
     } catch (err) {
       const e = err as AxiosError<ApiError>
       const d = e.response?.data
@@ -77,40 +92,15 @@ export default function RegisterPage() {
   const fe = (key: string, msg?: string) => fieldErrors[key]?.[0] ?? msg
 
   /* ── Theme ── */
-  const pageBg     = isDark ? '#0a0a0a' : 'linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%)'
+  const pageBg     = isDark
+    ? '#0a0a0a'
+    : 'linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%)'
   const cardBg     = isDark ? '#141414' : '#ffffff'
-  const cardShadow = isDark ? '0 4px 32px rgba(0,0,0,0.4)' : '0 4px 32px rgba(0,0,0,0.08)'
+  const cardShadow = isDark
+    ? '0 4px 32px rgba(0,0,0,0.4)'
+    : '0 4px 32px rgba(0,0,0,0.08)'
   const titleColor = isDark ? '#ffffff' : '#111111'
-  const iconColor  = { color: '#bbb' }
-
-  /* ── Success screen ── */
-  if (registered) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: pageBg, padding: 24 }}>
-        <div style={{ width: '100%', maxWidth: 380, background: cardBg,
-          borderRadius: 16, padding: '40px 28px', boxShadow: cardShadow, textAlign: 'center' }}>
-          <CheckCircleOutlined style={{ fontSize: 56, color: '#52c41a', marginBottom: 16 }} />
-          <Title level={3} style={{ color: titleColor, marginBottom: 8 }}>
-            Muvaffaqiyatli!
-          </Title>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
-            <strong style={{ color: isDark ? '#fff' : '#333' }}>{registered}</strong> ga
-            {' '}tasdiqlash xati yuborildi.
-          </Text>
-          <Button type="primary" size="large" block style={{ borderRadius: 8, fontWeight: 600 }}
-            onClick={() => navigate('/login', { replace: true })}>
-            Kirishga o'tish
-          </Button>
-          <div style={{ marginTop: 16 }}>
-            <Link to="/resend-confirmation" style={{ fontSize: 13 }}>
-              Xat kelmadimi? Qayta yuborish
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const ic         = { color: '#bbb' }
 
   return (
     <div style={{
@@ -137,7 +127,7 @@ export default function RegisterPage() {
           Yangi hisob
         </Title>
         <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24, fontSize: 13 }}>
-          Ro'yxatdan o'ting
+          Ro'yxatdan o'ting va darhol foydalaning
         </Text>
 
         {serverError && (
@@ -151,119 +141,118 @@ export default function RegisterPage() {
           {/* Ism / Familya */}
           <Row gutter={10}>
             <Col span={12}>
-              <div>
-                <Controller name="firstName" control={control} render={({ field }) => (
-                  <Input {...field} prefix={<UserOutlined style={iconColor}/>}
+              <Controller name="firstName" control={control} render={({ field }) => (
+                <div>
+                  <Input {...field} prefix={<UserOutlined style={ic}/>}
                     placeholder="Ism" size="large"
                     status={fe('FirstName', errors.firstName?.message) ? 'error' : ''}
                     style={{ borderRadius: 8 }} />
-                )}/>
-                {fe('FirstName', errors.firstName?.message) && (
-                  <Text type="danger" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-                    {fe('FirstName', errors.firstName?.message)}
-                  </Text>
-                )}
-              </div>
+                  {fe('FirstName', errors.firstName?.message) && (
+                    <Text type="danger" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
+                      {fe('FirstName', errors.firstName?.message)}
+                    </Text>
+                  )}
+                </div>
+              )}/>
             </Col>
             <Col span={12}>
-              <div>
-                <Controller name="lastName" control={control} render={({ field }) => (
-                  <Input {...field} prefix={<UserOutlined style={iconColor}/>}
+              <Controller name="lastName" control={control} render={({ field }) => (
+                <div>
+                  <Input {...field} prefix={<UserOutlined style={ic}/>}
                     placeholder="Familya" size="large"
                     status={fe('LastName', errors.lastName?.message) ? 'error' : ''}
                     style={{ borderRadius: 8 }} />
-                )}/>
-                {fe('LastName', errors.lastName?.message) && (
-                  <Text type="danger" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
-                    {fe('LastName', errors.lastName?.message)}
-                  </Text>
-                )}
-              </div>
+                  {fe('LastName', errors.lastName?.message) && (
+                    <Text type="danger" style={{ fontSize: 11, marginTop: 3, display: 'block' }}>
+                      {fe('LastName', errors.lastName?.message)}
+                    </Text>
+                  )}
+                </div>
+              )}/>
             </Col>
           </Row>
 
           {/* Email */}
-          <div>
-            <Controller name="email" control={control} render={({ field }) => (
-              <Input {...field} prefix={<MailOutlined style={iconColor}/>}
+          <Controller name="email" control={control} render={({ field }) => (
+            <div>
+              <Input {...field} prefix={<MailOutlined style={ic}/>}
                 placeholder="Email" size="large"
                 status={fe('Email', errors.email?.message) ? 'error' : ''}
                 style={{ borderRadius: 8 }} />
-            )}/>
-            {fe('Email', errors.email?.message) && (
-              <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
-                {fe('Email', errors.email?.message)}
-              </Text>
-            )}
-          </div>
+              {fe('Email', errors.email?.message) && (
+                <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
+                  {fe('Email', errors.email?.message)}
+                </Text>
+              )}
+            </div>
+          )}/>
 
           {/* Telefon */}
-          <div>
-            <Controller name="phoneNumber" control={control} render={({ field }) => (
-              <Input {...field} prefix={<PhoneOutlined style={iconColor}/>}
+          <Controller name="phoneNumber" control={control} render={({ field }) => (
+            <div>
+              <Input {...field} prefix={<PhoneOutlined style={ic}/>}
                 placeholder="+998901234567" size="large"
                 status={fe('PhoneNumber', errors.phoneNumber?.message) ? 'error' : ''}
                 style={{ borderRadius: 8 }} />
-            )}/>
-            {fe('PhoneNumber', errors.phoneNumber?.message) && (
-              <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
-                {fe('PhoneNumber', errors.phoneNumber?.message)}
-              </Text>
-            )}
-          </div>
+              {fe('PhoneNumber', errors.phoneNumber?.message) && (
+                <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
+                  {fe('PhoneNumber', errors.phoneNumber?.message)}
+                </Text>
+              )}
+            </div>
+          )}/>
 
           {/* Tug'ilgan sana */}
-          <div>
-            <Controller name="dateOfBirth" control={control} render={({ field }) => (
+          <Controller name="dateOfBirth" control={control} render={({ field }) => (
+            <div>
               <DatePicker
-                style={{ width: '100%', borderRadius: 8 }}
-                size="large"
-                format="DD.MM.YYYY"
-                placeholder="Tug'ilgan sana"
+                style={{ width: '100%', borderRadius: 8 }} size="large"
+                format="DD.MM.YYYY" placeholder="Tug'ilgan sana (katta yoshdagilar)"
                 status={fe('DateOfBirth', errors.dateOfBirth?.message) ? 'error' : ''}
                 disabledDate={(d: Dayjs) => d && d.isAfter(new Date())}
-                onChange={(date: Dayjs | null) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
+                onChange={(date: Dayjs | null) =>
+                  field.onChange(date ? date.format('YYYY-MM-DD') : '')}
               />
-            )}/>
-            {fe('DateOfBirth', errors.dateOfBirth?.message) && (
-              <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
-                {fe('DateOfBirth', errors.dateOfBirth?.message)}
-              </Text>
-            )}
-          </div>
+              {fe('DateOfBirth', errors.dateOfBirth?.message) && (
+                <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
+                  {fe('DateOfBirth', errors.dateOfBirth?.message)}
+                </Text>
+              )}
+            </div>
+          )}/>
 
           {/* Parol */}
-          <div>
-            <Controller name="password" control={control} render={({ field }) => (
-              <Input.Password {...field} prefix={<LockOutlined style={iconColor}/>}
-                placeholder="Parol (kamida 8 belgi)" size="large"
+          <Controller name="password" control={control} render={({ field }) => (
+            <div>
+              <Input.Password {...field} prefix={<LockOutlined style={ic}/>}
+                placeholder="Parol (katta harf + raqam)" size="large"
                 status={fe('Password', errors.password?.message) ? 'error' : ''}
                 style={{ borderRadius: 8 }} />
-            )}/>
-            {fe('Password', errors.password?.message) && (
-              <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
-                {fe('Password', errors.password?.message)}
-              </Text>
-            )}
-          </div>
+              {fe('Password', errors.password?.message) && (
+                <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
+                  {fe('Password', errors.password?.message)}
+                </Text>
+              )}
+            </div>
+          )}/>
 
-          {/* Parolni tasdiqlash */}
-          <div>
-            <Controller name="confirmPassword" control={control} render={({ field }) => (
-              <Input.Password {...field} prefix={<LockOutlined style={iconColor}/>}
+          {/* Tasdiqlash */}
+          <Controller name="confirmPassword" control={control} render={({ field }) => (
+            <div>
+              <Input.Password {...field} prefix={<LockOutlined style={ic}/>}
                 placeholder="Parolni tasdiqlash" size="large"
                 status={errors.confirmPassword ? 'error' : ''}
                 style={{ borderRadius: 8 }} />
-            )}/>
-            {errors.confirmPassword && (
-              <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
-                {errors.confirmPassword.message}
-              </Text>
-            )}
-          </div>
+              {errors.confirmPassword && (
+                <Text type="danger" style={{ fontSize: 12, marginTop: 3, display: 'block' }}>
+                  {errors.confirmPassword.message}
+                </Text>
+              )}
+            </div>
+          )}/>
 
           <Button type="primary" htmlType="submit" size="large" block loading={loading}
-            style={{ borderRadius: 8, fontWeight: 600, marginTop: 4 }}>
+            style={{ borderRadius: 8, fontWeight: 600, marginTop: 6 }}>
             Ro'yxatdan o'tish
           </Button>
         </form>

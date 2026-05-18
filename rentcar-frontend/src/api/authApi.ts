@@ -11,7 +11,7 @@ import type {
 
 export const authApi = {
   register: (data: RegisterDto) =>
-    api.post<{ message: string; email: string }>('/api/auth/register', data),
+    api.post<AuthResponseDto>('/api/auth/register', data),
 
   confirmEmail: (data: ConfirmEmailDto) =>
     api.post<AuthResponseDto>('/api/auth/confirm-email', data),
