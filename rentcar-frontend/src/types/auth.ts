@@ -57,6 +57,13 @@ export interface RefreshTokenDto {
 export interface RegisterPendingDto {
   email: string
   message: string
+  emailVerificationRequired: boolean
+  // Email service ishlamagan holda avtomatik login:
+  userId?:       number
+  fullName?:     string
+  role?:         UserRole
+  accessToken?:  string
+  refreshToken?: string
 }
 
 export interface ApiError {

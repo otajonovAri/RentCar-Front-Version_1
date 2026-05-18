@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { Dayjs } from 'dayjs'
 import { authApi } from '@/api/authApi'
+import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import type { ApiError } from '@/types/auth'
 import { AxiosError } from 'axios'
@@ -34,6 +35,7 @@ type RegisterForm = z.infer<typeof schema>
 
 export default function RegisterPage() {
   const navigate   = useNavigate()
+  const setAuth    = useAuthStore((s) => s.setAuth)
   const isDark     = useThemeStore((s) => s.isDark)
 
   const [serverError, setServerError] = useState<string | null>(null)
@@ -61,16 +63,40 @@ export default function RegisterPage() {
         password:    v.password,
       })
 
-      // OTP tasdiqlash sahifasiga yo'naltirish
-      navigate(
-        `/verify-email?email=${encodeURIComponent(data.email)}`,
-        { replace: true },
-      )
+      if (!data.emailVerificationRequired && data.accessToken) {
+        // Email service ishlamagan — avtomatik login
+        setAuth({
+          accessToken:  data.accessToken,
+          refreshToken: data.refreshToken!,
+          userId:       data.userId!,
+          fullName:     data.fullName!,
+          email:        data.email,
+          role:         data.role!,
+        })
+        navigate(
+          data.role === 'Customer' || data.role === 'Owner' ? '/my-rentals' : '/dashboard',
+          { replace: true },
+        )
+      } else {
+        // OTP tasdiqlash sahifasiga yo'naltirish
+        navigate(
+          `/verify-email?email=${encodeURIComponent(data.email)}`,
+          { replace: true },
+        )
+      }
     } catch (err) {
       const e = err as AxiosError<ApiError>
       const d = e.response?.data
-      if (d?.errors) setFieldErrors(d.errors)
-      else setServerError(d?.detail ?? "Xatolik yuz berdi. Qayta urinib ko'ring.")
+      // "detail" kalit xato — uni serverError sifatida ko'rsat
+      if (d?.errors?.['detail']) {
+        setServerError(d.errors['detail'][0])
+      } else if (d?.detail) {
+        setServerError(d.detail)
+      } else if (d?.errors) {
+        setFieldErrors(d.errors)
+      } else {
+        setServerError("Xatolik yuz berdi. Qayta urinib ko'ring.")
+      }
     } finally { setLoading(false) }
   }
 
