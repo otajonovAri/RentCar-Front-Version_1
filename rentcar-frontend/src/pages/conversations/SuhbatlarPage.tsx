@@ -349,6 +349,7 @@ export default function SuhbatlarPage() {
                 {/* Content */}
                 {(() => {
                   const { title, rental } = parseSubject(conv.subject)
+                  const displayTitle = isAdmin ? title : 'Oddiy Support Chat'
                   return (
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Row 1: title + time */}
@@ -363,7 +364,7 @@ export default function SuhbatlarPage() {
                           flex:         1,
                           marginRight:  8,
                         }}>
-                          {title}
+                          {displayTitle}
                         </span>
                         <span style={{
                           fontSize:  11,
@@ -376,7 +377,7 @@ export default function SuhbatlarPage() {
                       </div>
 
                       {/* Row 2: rental badge + last msg */}
-                      {(rental || conv.rentalId) && (
+                      {isAdmin && (rental || conv.rentalId) && (
                         <div style={{ marginBottom: 3 }}>
                           <span style={{
                             display:      'inline-flex',
@@ -532,10 +533,10 @@ export default function SuhbatlarPage() {
                 textOverflow: 'ellipsis',
                 whiteSpace:   'nowrap',
               }}>
-                {activeConv?.subject}
+                {isAdmin ? activeConv?.subject : 'Oddiy Support Chat'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {activeConv?.rentalId && (
+                {isAdmin && activeConv?.rentalId && (
                   <span style={{ fontSize: 11, color: token.colorTextTertiary, display: 'flex', alignItems: 'center', gap: 3 }}>
                     <CarFilled style={{ fontSize: 10 }} />
                     Ijara #{activeConv.rentalId}

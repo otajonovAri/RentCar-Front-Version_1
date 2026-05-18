@@ -1,8 +1,8 @@
 import { Layout, Menu } from 'antd'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  HomeFilled, CarFilled, CalendarFilled, MessageFilled,
-  BellFilled, WarningFilled, SafetyCertificateFilled, ToolFilled,
+  HomeFilled, CarFilled, CalendarFilled,
+  WarningFilled, SafetyCertificateFilled, ToolFilled,
   DollarCircleFilled, FileTextFilled, AppstoreFilled, ShopFilled,
   CrownFilled, ThunderboltFilled, TagsFilled, TeamOutlined,
   BranchesOutlined, GlobalOutlined, EnvironmentOutlined,
@@ -44,13 +44,11 @@ const menuItems: MenuItem[] = [
   { key: '/owner-payouts',  icon: <DollarCircleFilled />,     label: "Owner to'lovlari",     roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/pricing-tiers', icon: <AppstoreFilled />,         label: 'Narxlar jadvali',      roles: ['Admin', 'SuperAdmin'] },
   { key: '/insurance',     icon: <SafetyCertificateFilled />,label: "Sug'urta",             roles: ['Manager', 'Admin', 'SuperAdmin'] },
-  { key: '/notifications', icon: <BellFilled />,             label: 'Bildirishnomalar' },
   { key: '/promotions',    icon: <PercentageOutlined />,     label: 'Promokodlar',          roles: ['Admin', 'SuperAdmin'] },
   { key: '/car-listings',  icon: <TagsFilled />,             label: "Mashina so'rovlari",   roles: ['Admin', 'SuperAdmin'] },
   { key: '/car-features',  icon: <UnorderedListOutlined />,  label: 'Xususiyatlar',         roles: ['Admin', 'SuperAdmin'] },
   { key: '/brands',        icon: <ShopFilled />,             label: 'Brendlar',             roles: ['Admin', 'SuperAdmin'] },
   { key: '/car-models',    icon: <AppstoreFilled />,         label: 'Modellar',             roles: ['Admin', 'SuperAdmin'] },
-  { key: '/conversations', icon: <MessageFilled />,          label: 'Suhbatlar' },
   { key: '/users',         icon: <CrownFilled />,            label: 'Foydalanuvchilar',     roles: ['Admin', 'SuperAdmin'] },
 ]
 
