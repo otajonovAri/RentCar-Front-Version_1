@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Spin, theme, Grid, Input } from 'antd'
 import {
   CarFilled, SearchOutlined, FireFilled,
-  ThunderboltFilled, AppstoreFilled,
+  ThunderboltFilled, AppstoreFilled, DownOutlined,
 } from '@ant-design/icons'
 import { carsApi } from '@/api/carsApi'
 import { lookupsApi } from '@/api/lookupsApi'
@@ -35,6 +35,7 @@ export default function CarCatalogPage() {
   const [categories,       setCategories]       = useState<LookupItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>()
   const [search,           setSearch]           = useState('')
+  const [catOpen,          setCatOpen]          = useState(false)
   const debouncedSearch = useDebounce(search, 400)
 
   useEffect(() => {
@@ -195,38 +196,135 @@ export default function CarCatalogPage() {
       </div>
 
       {/* ── CATEGORY FILTER ─────────────────────────────────────────────────── */}
-      <div style={{
-        display:        'flex',
-        gap:            8,
-        flexWrap:       'wrap',
-        marginBottom:   24,
-        padding:        isMobile ? '0 2px' : 0,
-      }}>
-        {/* "Barchasi" chip */}
-        <CategoryChip
-          label="Barchasi"
-          icon={<AppstoreFilled style={{ fontSize: 13 }} />}
-          active={!selectedCategory}
-          color="#1677ff"
-          bg="rgba(22,119,255,0.1)"
-          onClick={() => setSelectedCategory(undefined)}
-        />
-        {categories.map((cat, idx) => {
-          const palette = CAT_COLORS[idx % CAT_COLORS.length]
-          return (
-            <CategoryChip
-              key={cat.id}
-              label={cat.name}
-              active={selectedCategory === cat.id}
-              color={palette.color}
-              bg={palette.bg}
-              onClick={() => setSelectedCategory(
-                selectedCategory === cat.id ? undefined : cat.id
+      {isMobile ? (
+        /* ── MOBILE: collapsed → expanded ── */
+        <div style={{ marginBottom: 20 }}>
+          {/* Trigger button — always visible */}
+          <button
+            onClick={() => setCatOpen(o => !o)}
+            style={{
+              width:          '100%',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'space-between',
+              padding:        '11px 16px',
+              borderRadius:   catOpen ? '12px 12px 0 0' : 12,
+              border:         `1.5px solid ${selectedCategory
+                ? CAT_COLORS[(categories.findIndex(c => c.id === selectedCategory)) % CAT_COLORS.length]?.color ?? '#1677ff'
+                : '#1677ff'}`,
+              background:     token.colorBgContainer,
+              cursor:         'pointer',
+              transition:     'all 0.2s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AppstoreFilled style={{
+                fontSize: 14,
+                color: selectedCategory
+                  ? CAT_COLORS[(categories.findIndex(c => c.id === selectedCategory)) % CAT_COLORS.length]?.color ?? '#1677ff'
+                  : '#1677ff',
+              }} />
+              <span style={{
+                fontSize:   14,
+                fontWeight: 700,
+                color: selectedCategory
+                  ? CAT_COLORS[(categories.findIndex(c => c.id === selectedCategory)) % CAT_COLORS.length]?.color ?? '#1677ff'
+                  : '#1677ff',
+              }}>
+                {selectedCategory
+                  ? categories.find(c => c.id === selectedCategory)?.name ?? 'Kategoriya'
+                  : 'Barchasi'}
+              </span>
+              {selectedCategory && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600,
+                  padding: '1px 7px', borderRadius: 20,
+                  background: 'rgba(22,119,255,0.1)', color: '#1677ff',
+                }}>
+                  Tanlangan
+                </span>
               )}
-            />
-          )
-        })}
-      </div>
+            </div>
+            <DownOutlined style={{
+              fontSize:   12,
+              color:      token.colorTextTertiary,
+              transition: 'transform 0.2s',
+              transform:  catOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            }} />
+          </button>
+
+          {/* Expanded list */}
+          {catOpen && (
+            <div style={{
+              border:        `1.5px solid ${token.colorBorderSecondary}`,
+              borderTop:     'none',
+              borderRadius:  '0 0 12px 12px',
+              overflow:      'hidden',
+              background:    token.colorBgContainer,
+            }}>
+              {/* Barchasi row */}
+              <CategoryRow
+                label="Barchasi"
+                icon={<AppstoreFilled style={{ fontSize: 14 }} />}
+                active={!selectedCategory}
+                color="#1677ff"
+                bg="rgba(22,119,255,0.1)"
+                onClick={() => { setSelectedCategory(undefined); setCatOpen(false) }}
+                token={token}
+              />
+              {categories.map((cat, idx) => {
+                const pal = CAT_COLORS[idx % CAT_COLORS.length]
+                return (
+                  <CategoryRow
+                    key={cat.id}
+                    label={cat.name}
+                    active={selectedCategory === cat.id}
+                    color={pal.color}
+                    bg={pal.bg}
+                    onClick={() => {
+                      setSelectedCategory(selectedCategory === cat.id ? undefined : cat.id)
+                      setCatOpen(false)
+                    }}
+                    token={token}
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── DESKTOP: barcha categorylar alohida div ── */
+        <div style={{
+          display:      'flex',
+          gap:          8,
+          flexWrap:     'wrap',
+          marginBottom: 24,
+        }}>
+          <CategoryChip
+            label="Barchasi"
+            icon={<AppstoreFilled style={{ fontSize: 13 }} />}
+            active={!selectedCategory}
+            color="#1677ff"
+            bg="rgba(22,119,255,0.1)"
+            onClick={() => setSelectedCategory(undefined)}
+          />
+          {categories.map((cat, idx) => {
+            const palette = CAT_COLORS[idx % CAT_COLORS.length]
+            return (
+              <CategoryChip
+                key={cat.id}
+                label={cat.name}
+                active={selectedCategory === cat.id}
+                color={palette.color}
+                bg={palette.bg}
+                onClick={() => setSelectedCategory(
+                  selectedCategory === cat.id ? undefined : cat.id
+                )}
+              />
+            )
+          })}
+        </div>
+      )}
 
       {/* ── RESULTS HEADER ──────────────────────────────────────────────────── */}
       {!loading && cars.length > 0 && (
@@ -335,7 +433,7 @@ export default function CarCatalogPage() {
   )
 }
 
-// ── Category chip component ────────────────────────────────────────────────────
+// ── Desktop chip ───────────────────────────────────────────────────────────────
 interface ChipProps {
   label:   string
   icon?:   React.ReactNode
@@ -361,11 +459,7 @@ function CategoryChip({ label, icon, active, color, bg, onClick }: ChipProps) {
         padding:      '8px 18px',
         borderRadius: 50,
         border:       `1.5px solid ${active ? color : (hovered ? color + '60' : token.colorBorderSecondary)}`,
-        background:   active
-          ? color
-          : hovered
-            ? bg
-            : token.colorBgContainer,
+        background:   active ? color : hovered ? bg : token.colorBgContainer,
         color:        active ? '#fff' : hovered ? color : token.colorText,
         cursor:       'pointer',
         fontWeight:   active ? 700 : 500,
@@ -378,5 +472,77 @@ function CategoryChip({ label, icon, active, color, bg, onClick }: ChipProps) {
       {icon}
       {label}
     </button>
+  )
+}
+
+// ── Mobile row (expanded list item) ───────────────────────────────────────────
+interface RowProps {
+  label:   string
+  icon?:   React.ReactNode
+  active:  boolean
+  color:   string
+  bg:      string
+  onClick: () => void
+  token:   ReturnType<typeof theme.useToken>['token']
+}
+
+function CategoryRow({ label, icon, active, color, bg, onClick, token }: RowProps) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display:        'flex',
+        alignItems:     'center',
+        gap:            12,
+        padding:        '12px 16px',
+        cursor:         'pointer',
+        borderTop:      `1px solid ${token.colorBorderSecondary}`,
+        background:     active ? bg : 'transparent',
+        transition:     'background 0.15s',
+      }}
+    >
+      {/* Color dot */}
+      <div style={{
+        width:        36,
+        height:       36,
+        borderRadius: 10,
+        background:   active ? color : bg,
+        display:      'flex',
+        alignItems:   'center',
+        justifyContent: 'center',
+        flexShrink:   0,
+        transition:   'all 0.15s',
+      }}>
+        <span style={{ color: active ? '#fff' : color, fontSize: 15 }}>
+          {icon ?? <AppstoreFilled />}
+        </span>
+      </div>
+
+      {/* Label */}
+      <span style={{
+        flex:       1,
+        fontSize:   14,
+        fontWeight: active ? 700 : 500,
+        color:      active ? color : token.colorText,
+      }}>
+        {label}
+      </span>
+
+      {/* Active check */}
+      {active && (
+        <div style={{
+          width:        20,
+          height:       20,
+          borderRadius: '50%',
+          background:   color,
+          display:      'flex',
+          alignItems:   'center',
+          justifyContent: 'center',
+          flexShrink:   0,
+        }}>
+          <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>
+        </div>
+      )}
+    </div>
   )
 }
