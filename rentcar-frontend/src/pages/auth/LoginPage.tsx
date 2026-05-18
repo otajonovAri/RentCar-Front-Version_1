@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { authApi } from '@/api/authApi'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 import type { ApiError, AuthResponseDto } from '@/types/auth'
 import { AxiosError } from 'axios'
 
@@ -20,10 +21,11 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const navigate  = useNavigate()
-  const setAuth   = useAuthStore((s) => s.setAuth)
-  const [error,   setError]   = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const navigate   = useNavigate()
+  const setAuth    = useAuthStore((s) => s.setAuth)
+  const isDark     = useThemeStore((s) => s.isDark)
+  const [error,    setError]    = useState<string | null>(null)
+  const [loading,  setLoading]  = useState(false)
   const [gLoading, setGLoading] = useState(false)
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginForm>({
@@ -46,7 +48,6 @@ export default function LoginPage() {
     )
   }
 
-  /* ── Parol bilan kirish ─────────────────────────────────── */
   const onSubmit = async (v: LoginForm) => {
     setError(null); setLoading(true)
     try {
@@ -58,7 +59,6 @@ export default function LoginPage() {
     } finally { setLoading(false) }
   }
 
-  /* ── Google bilan kirish ────────────────────────────────── */
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setError(null); setGLoading(true)
@@ -73,29 +73,67 @@ export default function LoginPage() {
     onError: () => setError('Google orqali kirishda xatolik yuz berdi.'),
   })
 
+  /* ── Theme ─────────────────────────────────────────────── */
+  const pageBg   = isDark
+    ? '#0a0a0a'
+    : 'linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%)'
+  const cardBg   = isDark ? '#141414' : '#ffffff'
+  const cardShadow = isDark
+    ? '0 4px 32px rgba(0,0,0,0.4)'
+    : '0 4px 32px rgba(0,0,0,0.08)'
+  const titleColor = isDark ? '#ffffff' : '#111111'
+  const googleBtnStyle: React.CSSProperties = {
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+    gap:            8,
+    height:         44,
+    borderRadius:   8,
+    border:         isDark ? '1.5px solid #333' : '1.5px solid #e0e0e0',
+    background:     isDark ? '#1f1f1f' : '#ffffff',
+    fontWeight:     500,
+    fontSize:       14,
+    color:          isDark ? '#e0e0e0' : '#333333',
+    boxShadow:      isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+    width:          '100%',
+  }
+
   return (
-    <div style={s.page}>
-      <div style={s.card}>
+    <div style={{
+      minHeight:      '100vh',
+      display:        'flex',
+      alignItems:     'center',
+      justifyContent: 'center',
+      background:     pageBg,
+      padding:        '24px',
+    }}>
+      <div style={{
+        width:        '100%',
+        maxWidth:     380,
+        background:   cardBg,
+        borderRadius: 16,
+        padding:      '32px 28px',
+        boxShadow:    cardShadow,
+      }}>
 
         {/* Logo */}
-        <div style={s.logo}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
             <rect width="32" height="32" rx="8" fill="#1677ff"/>
             <path d="M8 22 L16 10 L24 22" stroke="white" strokeWidth="2.5"
                   strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="16" cy="10" r="2" fill="white"/>
           </svg>
-          <Title level={4} style={{ margin: 0, color: '#111' }}>RentCar</Title>
+          <Title level={4} style={{ margin: 0, color: titleColor }}>RentCar</Title>
         </div>
 
-        <Title level={3} style={{ margin: '0 0 4px', textAlign: 'center', fontSize: 20 }}>
+        <Title level={3} style={{ margin: '0 0 4px', textAlign: 'center', fontSize: 20, color: titleColor }}>
           Xush kelibsiz
         </Title>
         <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24, fontSize: 13 }}>
           Hisobingizga kiring
         </Text>
 
-        {/* Xato */}
         {error && (
           <Alert
             message={error}
@@ -113,7 +151,7 @@ export default function LoginPage() {
           block
           loading={gLoading}
           onClick={() => googleLogin()}
-          style={s.googleBtn}
+          style={googleBtnStyle}
           icon={
             !gLoading && (
               <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0 }}>
@@ -132,7 +170,6 @@ export default function LoginPage() {
           <Text type="secondary" style={{ fontSize: 12 }}>yoki</Text>
         </Divider>
 
-        {/* Email / Parol */}
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <Controller
@@ -190,7 +227,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div style={s.footer}>
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>Hisob yo'qmi? </Text>
           <Link to="/register" style={{ fontSize: 13, fontWeight: 500 }}>
             Ro'yxatdan o'tish
@@ -199,49 +236,4 @@ export default function LoginPage() {
       </div>
     </div>
   )
-}
-
-/* ── Styles ──────────────────────────────────────────────── */
-const s = {
-  page: {
-    minHeight:       '100vh',
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    background:      'linear-gradient(135deg, #f0f4ff 0%, #f5f5f5 100%)',
-    padding:         '24px',
-  },
-  card: {
-    width:           '100%',
-    maxWidth:        380,
-    background:      '#fff',
-    borderRadius:    16,
-    padding:         '32px 28px',
-    boxShadow:       '0 4px 32px rgba(0,0,0,0.08)',
-  },
-  logo: {
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    gap:             10,
-    marginBottom:    16,
-  },
-  googleBtn: {
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    gap:             8,
-    height:          44,
-    borderRadius:    8,
-    border:          '1.5px solid #e0e0e0',
-    background:      '#fff',
-    fontWeight:      500,
-    fontSize:        14,
-    color:           '#333',
-    boxShadow:       '0 1px 3px rgba(0,0,0,0.06)',
-  },
-  footer: {
-    textAlign:       'center' as const,
-    marginTop:       20,
-  },
 }
