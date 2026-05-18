@@ -118,8 +118,9 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
   ]
 
   // ── Popover content ───────────────────────────────────────────────────────
+  const popWidth = screens.sm ? 320 : Math.min(window.innerWidth - 24, 320)
   const popContent = (
-    <div style={{ width: 320 }}>
+    <div style={{ width: popWidth }}>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -173,7 +174,7 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
                             color: token.colorText,
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
-                            {isClient ? 'Oddiy Support Chat' : c.subject}
+                            {isClient ? 'Support Chat' : c.subject}
                           </div>
                           <div style={{
                             fontSize: 11, color: token.colorTextTertiary,
@@ -324,8 +325,13 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
           open={popOpen}
           onOpenChange={handleOpenChange}
           arrow={false}
-          overlayStyle={{ paddingTop: 8 }}
-          overlayInnerStyle={{ padding: '8px 12px', minWidth: 340 }}
+          overlayStyle={{ paddingTop: 8, maxWidth: '96vw' }}
+          overlayInnerStyle={{
+            padding: screens.sm ? '8px 12px' : '8px 8px',
+            minWidth: screens.sm ? 340 : undefined,
+            width: screens.sm ? undefined : 'calc(100vw - 16px)',
+            maxWidth: 360,
+          }}
         >
           <Badge count={totalUnread} size="small" offset={[-4, 4]}>
             <Button

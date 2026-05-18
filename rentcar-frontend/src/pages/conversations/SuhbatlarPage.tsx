@@ -349,7 +349,7 @@ export default function SuhbatlarPage() {
                 {/* Content */}
                 {(() => {
                   const { title, rental } = parseSubject(conv.subject)
-                  const displayTitle = isAdmin ? title : 'Oddiy Support Chat'
+                  const displayTitle = isAdmin ? title : 'Support Chat'
                   return (
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Row 1: title + time */}
@@ -533,7 +533,7 @@ export default function SuhbatlarPage() {
                 textOverflow: 'ellipsis',
                 whiteSpace:   'nowrap',
               }}>
-                {isAdmin ? activeConv?.subject : 'Oddiy Support Chat'}
+                {isAdmin ? activeConv?.subject : 'Support Chat'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {isAdmin && activeConv?.rentalId && (
