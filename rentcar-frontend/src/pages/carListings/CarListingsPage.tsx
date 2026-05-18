@@ -412,8 +412,26 @@ export default function CarListingsPage() {
                   {fmt(detailTarget.requestedDailyRate)} so'm/kun
                 </span>
               }/>
+              {detailTarget.status === 'Approved' && detailTarget.approvedDailyRate && (
+                <InfoRow icon={<DollarCircleFilled style={{ color: '#52c41a' }}/>} label="Admin narxi" value={
+                  <span style={{ color: '#52c41a', fontWeight: 800 }}>
+                    {fmt(detailTarget.approvedDailyRate)} so'm/kun
+                  </span>
+                }/>
+              )}
               {detailTarget.ownerRevenuePercent !== null && (
-                <InfoRow icon={<PercentageOutlined/>} label="Owner ulushi"   value={`${detailTarget.ownerRevenuePercent}%`}/>
+                <InfoRow icon={<PercentageOutlined/>} label="Sizning ulushingiz" value={
+                  <span style={{ color: '#722ed1', fontWeight: 700 }}>
+                    {detailTarget.ownerRevenuePercent}%
+                  </span>
+                }/>
+              )}
+              {detailTarget.adminNotes && (
+                <InfoRow icon={<FileTextOutlined/>} label="Admin izohi" value={
+                  <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>
+                    {detailTarget.adminNotes}
+                  </span>
+                }/>
               )}
               <InfoRow icon={<CalendarOutlined/>}     label="Yuborilgan"     value={format(new Date(detailTarget.createdAt), 'dd.MM.yyyy HH:mm')}/>
             </div>
@@ -695,12 +713,44 @@ function ListingCard({
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 12, color: token.colorTextTertiary, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <DollarCircleFilled/> Narx
+              <DollarCircleFilled/> {item.status === 'Approved' ? "So'ralgan" : 'Narx'}
             </span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#fa8c16' }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: item.status === 'Approved' ? token.colorTextSecondary : '#fa8c16',
+              textDecoration: item.status === 'Approved' && item.approvedDailyRate ? 'line-through' : 'none',
+              fontSize: item.status === 'Approved' && item.approvedDailyRate ? 11 : 13,
+            }}>
               {fmt(item.requestedDailyRate)} so'm/kun
             </span>
           </div>
+
+          {/* Admin tasdiqlagan narx */}
+          {item.status === 'Approved' && item.approvedDailyRate && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: token.colorTextTertiary, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <DollarCircleFilled style={{ color: '#52c41a' }}/> Admin narxi
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#52c41a' }}>
+                {fmt(item.approvedDailyRate)} so'm/kun
+              </span>
+            </div>
+          )}
+
+          {/* Owner ulushi */}
+          {item.status === 'Approved' && item.ownerRevenuePercent && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: token.colorTextTertiary, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <PercentageOutlined/> Sizning ulushingiz
+              </span>
+              <span style={{
+                fontSize: 12, fontWeight: 700,
+                color: '#722ed1',
+                background: 'rgba(114,46,209,0.1)',
+                padding: '1px 8px', borderRadius: 20,
+              }}>
+                {item.ownerRevenuePercent}%
+              </span>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 12, color: token.colorTextTertiary, display: 'flex', alignItems: 'center', gap: 4 }}>

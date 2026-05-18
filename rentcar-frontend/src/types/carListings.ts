@@ -1,18 +1,21 @@
 export type CarListingStatus = 'Pending' | 'Approved' | 'Rejected'
 
 export interface CarListingDto {
-  id: number
-  ownerName: string
-  brand: string
-  model: string
-  year: number
-  licensePlate: string
-  color: string
-  requestedDailyRate: number
+  id:                  number
+  ownerName:           string
+  brand:               string
+  model:               string
+  year:                number
+  licensePlate:        string
+  color:               string
+  requestedDailyRate:  number
   ownerRevenuePercent: number | null
-  status: CarListingStatus
-  rejectionReason: string | null
-  createdAt: string
+  approvedDailyRate:   number | null   // Admin tasdiqlagan narx
+  status:              CarListingStatus
+  rejectionReason:     string | null
+  adminNotes:          string | null   // Admin izohi
+  carId:               number | null   // Tasdiqlangan Car ID
+  createdAt:           string
 }
 
 export interface CreateCarListingDto {
