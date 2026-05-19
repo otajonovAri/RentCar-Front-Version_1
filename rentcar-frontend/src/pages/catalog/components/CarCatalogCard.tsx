@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons'
 import type { CarListItemDto } from '@/types/cars'
 import { TRANSMISSION_LABEL } from '@/types/cars'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
 
@@ -105,17 +106,14 @@ export default function CarCatalogCard({ car }: Props) {
                 {car.categoryName ?? 'Sedan'} · {car.year}
               </div>
             </div>
-            {logo && (
-              <div style={{
-                width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                background: token.colorFillAlter,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <img src={logo} alt={car.brand} style={{ width: 24, height: 24, objectFit: 'contain' }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-              </div>
-            )}
+            <div style={{
+              width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+              background: token.colorFillAlter,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <BrandLogo src={logo} alt={car.brand} size={24} />
+            </div>
           </div>
 
           {/* Specs row */}
@@ -227,17 +225,14 @@ export default function CarCatalogCard({ car }: Props) {
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{car.categoryName ?? 'Sedan'}</div>
           </div>
-          {logo && (
-            <div style={{
-              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(255,255,255,0.92)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-            }}>
-              <img src={logo} alt={car.brand} style={{ width: 28, height: 28, objectFit: 'contain' }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            </div>
-          )}
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(255,255,255,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}>
+            <BrandLogo src={logo} alt={car.brand} size={28} />
+          </div>
         </div>
       </div>
 

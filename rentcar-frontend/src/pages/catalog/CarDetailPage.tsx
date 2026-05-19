@@ -7,6 +7,7 @@ import {
   ShoppingCartOutlined, CalendarOutlined,
   LoginOutlined, UserAddOutlined, ProfileOutlined, ExclamationCircleFilled,
 } from '@ant-design/icons'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { carsApi } from '@/api/carsApi'
 import { pricingTiersApi } from '@/api/pricingTiersApi'
 import { usersApi } from '@/api/usersApi'
@@ -276,14 +277,7 @@ export default function CarDetailPage() {
           <div style={{ ...cardStyle, height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Brand logo + Name */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-              {car.brandLogoUrl && (
-                <img
-                  src={car.brandLogoUrl}
-                  alt={car.brand}
-                  style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-              )}
+              <BrandLogo src={car.brandLogoUrl} alt={car.brand} size={48} />
               <h1 style={{
                 fontSize:      isMobile ? 20 : 26,
                 fontWeight:    800,

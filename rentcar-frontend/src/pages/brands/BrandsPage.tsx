@@ -8,6 +8,7 @@ import {
   SearchOutlined, ShopFilled, CarFilled, AppstoreFilled,
   GlobalOutlined,
 } from '@ant-design/icons'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { brandsApi } from '@/api/brandsApi'
 import type { BrandDto } from '@/types/brands'
 import type { PaginatedResponse } from '@/types/common'
@@ -29,9 +30,6 @@ function brandGradient(id: number) {
   return BRAND_PALETTE[id % BRAND_PALETTE.length]
 }
 
-function brandInitials(name: string) {
-  return name.slice(0, 2).toUpperCase()
-}
 
 export default function BrandsPage() {
   const { token }  = theme.useToken()
@@ -289,7 +287,7 @@ export default function BrandsPage() {
                     {/* Logo / initials */}
                     <div style={{
                       width:72, height:72, borderRadius:18,
-                      background: brand.logoUrl ? token.colorFillAlter : grad,
+                      background: token.colorFillAlter,
                       display:'flex', alignItems:'center', justifyContent:'center',
                       overflow:'hidden',
                       border:`2px solid ${token.colorBorderSecondary}`,
@@ -297,21 +295,7 @@ export default function BrandsPage() {
                       transition:'box-shadow 0.2s',
                       flexShrink:0,
                     }}>
-                      {brand.logoUrl ? (
-                        <img
-                          src={brand.logoUrl}
-                          alt={brand.name}
-                          style={{ width:'100%', height:'100%', objectFit:'contain', padding:8 }}
-                          onError={e => {
-                            const el = e.target as HTMLImageElement
-                            el.style.display = 'none'
-                          }}
-                        />
-                      ) : (
-                        <span style={{ color:'#fff', fontWeight:900, fontSize:22, letterSpacing:1 }}>
-                          {brandInitials(brand.name)}
-                        </span>
-                      )}
+                      <BrandLogo src={brand.logoUrl} alt={brand.name} size={56} />
                     </div>
 
                     {/* Brand name */}

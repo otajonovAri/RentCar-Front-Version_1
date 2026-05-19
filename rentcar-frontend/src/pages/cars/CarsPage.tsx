@@ -5,6 +5,7 @@ import {
   CheckCircleFilled, SyncOutlined, EnvironmentOutlined,
   TeamOutlined, DollarCircleFilled, AppstoreFilled,
 } from '@ant-design/icons'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { carsApi } from '@/api/carsApi'
 import { getApiError } from '@/utils/apiError'
 import type { CarListItemDto, CarDetailDto, CarStatus } from '@/types/cars'
@@ -429,13 +430,7 @@ export default function CarsPage() {
                       </div>
 
                       {/* Brand logo */}
-                      {car.brandLogoUrl && (
-                        <img
-                          src={car.brandLogoUrl}
-                          alt={car.brand}
-                          style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0, borderRadius: 6 }}
-                        />
-                      )}
+                      <BrandLogo src={car.brandLogoUrl} alt={car.brand} size={32} style={{ borderRadius: 6 }} />
                     </div>
 
                     {/* Color dot + name */}
