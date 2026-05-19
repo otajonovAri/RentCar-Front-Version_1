@@ -165,7 +165,7 @@ export default function MobileDrawerMenu({ onClose }: Props) {
       </div>
 
       {/* ── Menu items ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {visibleItems.map(item => {
           const isActive = location.pathname === item.key ||
             (item.key !== '/' && location.pathname.startsWith(item.key))
@@ -174,33 +174,45 @@ export default function MobileDrawerMenu({ onClose }: Props) {
               key={item.key}
               onClick={() => handleNav(item.key)}
               style={{
-                display:     'flex',
-                alignItems:  'center',
-                gap:         14,
-                padding:     '12px 20px',
-                cursor:      'pointer',
-                background:  isActive ? active : 'transparent',
-                borderLeft:  isActive ? '3px solid #1677ff' : '3px solid transparent',
-                transition:  'background 0.15s',
-                userSelect:  'none',
+                display:      'flex',
+                alignItems:   'center',
+                gap:          12,
+                padding:      '12px 14px',
+                borderRadius: 10,
+                cursor:       'pointer',
+                background:   isActive
+                  ? 'linear-gradient(135deg,rgba(22,119,255,0.45),rgba(99,102,241,0.35))'
+                  : 'rgba(255,255,255,0.05)',
+                border:       isActive
+                  ? '1px solid rgba(22,119,255,0.5)'
+                  : '1px solid rgba(255,255,255,0.07)',
+                transition:   'all 0.15s',
+                userSelect:   'none',
               }}
             >
               <span style={{
-                fontSize:   17,
-                color:      isActive ? '#1677ff' : 'rgba(255,255,255,0.65)',
+                fontSize:   16,
+                color:      isActive ? '#60a5fa' : 'rgba(255,255,255,0.55)',
                 flexShrink: 0,
                 display:    'flex',
               }}>
                 {item.icon}
               </span>
               <span style={{
-                fontSize:   14,
+                fontSize:   13,
                 fontWeight: isActive ? 700 : 400,
-                color:      isActive ? '#fff' : 'rgba(255,255,255,0.75)',
+                color:      isActive ? '#fff' : 'rgba(255,255,255,0.7)',
                 lineHeight: 1.2,
+                flex:       1,
               }}>
                 {item.label}
               </span>
+              {isActive && (
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#60a5fa', flexShrink: 0,
+                }} />
+              )}
             </div>
           )
         })}
