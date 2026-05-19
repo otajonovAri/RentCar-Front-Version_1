@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom'
 import AppSider from './AppSider'
 import AppHeader from './AppHeader'
 import CustomerBottomNav from './CustomerBottomNav'
+import MobileDrawerMenu from './MobileDrawerMenu'
 import { useThemeStore } from '@/store/themeStore'
 import { useAuthStore } from '@/store/authStore'
 import { conversationsApi } from '@/api/conversationsApi'
@@ -50,14 +51,14 @@ export default function MainLayout() {
           placement="left"
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
-          width={220}
+          width={260}
           styles={{
             body:   { padding: 0, background: isDark ? '#141414' : '#001529' },
             header: { display: 'none' },
             mask:   {},
           }}
         >
-          <AppSider collapsed={false} onMenuClick={() => setDrawerOpen(false)} />
+          <MobileDrawerMenu onClose={() => setDrawerOpen(false)} />
         </Drawer>
       )}
 

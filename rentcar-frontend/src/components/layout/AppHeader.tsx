@@ -372,27 +372,29 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
           </Popover>
         )}
 
-        {/* User dropdown */}
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: token.borderRadius }}>
-            <Avatar
-              size={34}
-              src={avatarUrl ?? undefined}
-              style={{
-                background: 'linear-gradient(135deg, #1677ff 0%, #6366f1 100%)',
-                fontWeight: 700, fontSize: 14, flexShrink: 0,
-              }}
-            >
-              {!avatarUrl && initials}
-            </Avatar>
-            <div style={{ display: screens?.sm ? 'flex' : 'none', flexDirection: 'column', lineHeight: 1.3 }}>
-              <Text strong style={{ fontSize: 13 }}>{fullName}</Text>
-              <Text type="secondary" style={{ fontSize: 11 }}>
-                {ROLE_LABELS[role ?? ''] ?? role}
-              </Text>
-            </div>
-          </Space>
-        </Dropdown>
+        {/* User dropdown — Customer/Owner mobile'da ko'rinmaydi (bottom nav'da profil bor) */}
+        {!(isMobile && isClient) && (
+          <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
+            <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: token.borderRadius }}>
+              <Avatar
+                size={34}
+                src={avatarUrl ?? undefined}
+                style={{
+                  background: 'linear-gradient(135deg, #1677ff 0%, #6366f1 100%)',
+                  fontWeight: 700, fontSize: 14, flexShrink: 0,
+                }}
+              >
+                {!avatarUrl && initials}
+              </Avatar>
+              <div style={{ display: screens?.sm ? 'flex' : 'none', flexDirection: 'column', lineHeight: 1.3 }}>
+                <Text strong style={{ fontSize: 13 }}>{fullName}</Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {ROLE_LABELS[role ?? ''] ?? role}
+                </Text>
+              </div>
+            </Space>
+          </Dropdown>
+        )}
       </Space>
     </Header>
   )
