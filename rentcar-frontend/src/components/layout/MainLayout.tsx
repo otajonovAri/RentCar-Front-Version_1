@@ -21,7 +21,7 @@ export default function MainLayout() {
   const isDark     = useThemeStore((s) => s.isDark)
   const { userId, role } = useAuthStore()
 
-  const isMobile   = !screens.md
+  const isMobile   = !screens.lg
   const isCustomer = role === 'Customer' || role === 'Owner'
 
   // Unread count for bottom nav badge (only customers, only mobile)

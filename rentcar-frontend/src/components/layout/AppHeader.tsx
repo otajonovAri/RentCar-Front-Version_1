@@ -38,7 +38,7 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
   const { isDark, toggle } = useThemeStore()
   const { token } = theme.useToken()
   const screens   = Grid.useBreakpoint()
-  const isMobile  = !screens.sm
+  const isMobile  = !screens.lg
 
   const isClient = role === 'Customer' || role === 'Owner'
 

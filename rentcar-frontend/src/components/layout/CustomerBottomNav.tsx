@@ -29,7 +29,7 @@ export default function CustomerBottomNav({ unreadMessages = 0 }: Props) {
   const { token } = theme.useToken()
   const role      = useAuthStore((s) => s.role)
 
-  const isMobile   = !screens.md
+  const isMobile   = !screens.lg
   const isCustomer = role === 'Customer' || role === 'Owner'
 
   if (!isMobile || !isCustomer) return null
