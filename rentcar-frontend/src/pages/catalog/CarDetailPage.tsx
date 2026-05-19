@@ -6,6 +6,7 @@ import {
   FireOutlined, DashboardOutlined, CarOutlined,
   ShoppingCartOutlined, CalendarOutlined,
   LoginOutlined, UserAddOutlined, ProfileOutlined, ExclamationCircleFilled,
+  StopOutlined, WarningFilled,
 } from '@ant-design/icons'
 import { BrandLogo } from '@/components/shared/BrandLogo'
 import { carsApi } from '@/api/carsApi'
@@ -84,6 +85,9 @@ export default function CarDetailPage() {
     if (!userProfile.dateOfBirth)   missingFields.push("Tug'ilgan sana")
     if (!userProfile.licenseNumber) missingFields.push("Haydovchilik guvohnomasi")
   }
+  /** Foydalanuvchi bloklangan mi? */
+  const isUserBlocked = userProfile?.isBlocked === true
+
   /** Ijara/Bron tugmasi bosilganda universal tekshiruv */
   const handleBookingClick = async (type: 'rental' | 'reservation') => {
     // 1. Autentifikatsiya tekshiruvi
@@ -97,6 +101,8 @@ export default function CarDetailPage() {
       try {
         const res = await usersApi.getById(userId!)
         setUserProfile(res.data)
+        // 2a. Bloklangan tekshirish
+        if (res.data.isBlocked) return  // banner ko'rsatiladi, modal ochilmaydi
         const missing: string[] = []
         if (!res.data.phoneNumber)   missing.push("Telefon raqam")
         if (!res.data.dateOfBirth)   missing.push("Tug'ilgan sana")
@@ -106,12 +112,14 @@ export default function CarDetailPage() {
         setProfileChecking(false)
       }
     }
-    // 3. Profil to'liq emas
+    // 3. Bloklangan foydalanuvchi — bron qila olmaydi
+    if (isUserBlocked) return
+    // 4. Profil to'liq emas
     if (missingFields.length > 0) {
       setProfileModalOpen(true)
       return
     }
-    // 4. Hammasi ok — modalni ochamiz
+    // 5. Hammasi ok — modalni ochamiz
     if (type === 'rental') setRentalOpen(true)
     else setReservationOpen(true)
   }
@@ -336,61 +344,161 @@ export default function CarDetailPage() {
 
             {/* Action buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
-              {/* WA + TG + Hozir olish */}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <a href={WA_LINK} target="_blank" rel="noopener noreferrer">
-                  <button style={actionIconBtn('#25d366')}><WhatsAppIcon /></button>
-                </a>
-                <a href={TG_LINK} target="_blank" rel="noopener noreferrer">
-                  <button style={actionIconBtn('#0088cc')}><TelegramIcon /></button>
-                </a>
-                <button
-                  style={{
-                    flex:           1,
-                    height:         48,
-                    borderRadius:   10,
-                    background:     PRIMARY_RED,
-                    border:         'none',
-                    cursor:         'pointer',
-                    color:          '#fff',
-                    fontWeight:     700,
-                    fontSize:       14,
-                    display:        'flex',
-                    alignItems:     'center',
-                    justifyContent: 'center',
-                    gap:            6,
-                    opacity:        profileChecking ? 0.7 : 1,
-                  }}
-                  onClick={() => handleBookingClick('rental')}
-                  disabled={profileChecking}
-                >
-                  <ShoppingCartOutlined style={{ fontSize: 16 }} />
-                  {profileChecking ? 'Tekshirilmoqda...' : 'Hozir olish'}
-                </button>
-              </div>
 
-              {/* Bron qilish — to'liq kenglik */}
-              <button
-                style={{
-                  width:          '100%',
-                  height:         44,
-                  borderRadius:   10,
-                  background:     token.colorBgContainer,
-                  border:         `2px solid ${PRIMARY_RED}`,
-                  cursor:         'pointer',
-                  color:          PRIMARY_RED,
-                  fontWeight:     700,
-                  fontSize:       14,
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'center',
-                  gap:            6,
-                }}
-                onClick={() => handleBookingClick('reservation')}
-              >
-                <CalendarOutlined style={{ fontSize: 15 }} />
-                Bron qilib qo'yish
-              </button>
+              {/* ── BLOK BANNERI ─────────────────────────────────────── */}
+              {isAuthenticated && isUserBlocked && (
+                <div style={{
+                  borderRadius: 12,
+                  background:   'linear-gradient(135deg, rgba(255,77,79,0.12), rgba(245,34,45,0.08))',
+                  border:       '1.5px solid rgba(255,77,79,0.4)',
+                  padding:      '14px 16px',
+                }}>
+                  {/* Sarlavha */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                      background: 'rgba(255,77,79,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <StopOutlined style={{ color: '#ff4d4f', fontSize: 15 }}/>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 13, color: '#ff4d4f', lineHeight: 1.2 }}>
+                        Hisobingiz bloklangan
+                      </div>
+                      <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>
+                        Mashina ijaraga olish mumkin emas
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sabab */}
+                  {userProfile?.blockReason && (
+                    <div style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 6,
+                      padding: '8px 10px', borderRadius: 8,
+                      background: 'rgba(255,77,79,0.08)',
+                      marginBottom: 8,
+                    }}>
+                      <WarningFilled style={{ color: '#fa8c16', fontSize: 11, marginTop: 1, flexShrink: 0 }}/>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#595959', marginBottom: 2 }}>
+                          Blok sababi:
+                        </div>
+                        <div style={{ fontSize: 12, color: '#262626', lineHeight: 1.5 }}>
+                          {userProfile.blockReason}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Muddat */}
+                  <div style={{ fontSize: 11, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {userProfile?.blockedUntil ? (
+                      <>📅 Blok muddati: <strong style={{ color: '#ff4d4f' }}>
+                        {new Date(userProfile.blockedUntil).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </strong> gacha</>
+                    ) : (
+                      <>⚠️ <strong style={{ color: '#ff4d4f' }}>Doimiy blok</strong></>
+                    )}
+                  </div>
+
+                  {/* Tavsiya */}
+                  <div style={{
+                    marginTop: 10, paddingTop: 10,
+                    borderTop: '1px solid rgba(255,77,79,0.15)',
+                    fontSize: 11, color: '#8c8c8c', lineHeight: 1.5,
+                  }}>
+                    💡 Ushbu xatolikni qayta qilmaslik uchun <strong>qo'llab-quvvatlash</strong> xizmatiga murojaat qiling
+                    yoki <strong>profilingizni</strong> ko'rib chiqing.
+                  </div>
+
+                  {/* Kontakt tugmalari */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <a href={WA_LINK} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>
+                      <button style={{
+                        width: '100%', height: 36, borderRadius: 8,
+                        background: '#25d366', border: 'none',
+                        cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 12,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      }}>
+                        <WhatsAppIcon/> WhatsApp
+                      </button>
+                    </a>
+                    <a href={TG_LINK} target="_blank" rel="noopener noreferrer" style={{ flex: 1 }}>
+                      <button style={{
+                        width: '100%', height: 36, borderRadius: 8,
+                        background: '#0088cc', border: 'none',
+                        cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 12,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      }}>
+                        <TelegramIcon/> Telegram
+                      </button>
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* ── NORMAL TUGMALAR (faqat bloklanmagan userlarga) ── */}
+              {(!isAuthenticated || !isUserBlocked) && (
+                <>
+                  {/* WA + TG + Hozir olish */}
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <a href={WA_LINK} target="_blank" rel="noopener noreferrer">
+                      <button style={actionIconBtn('#25d366')}><WhatsAppIcon /></button>
+                    </a>
+                    <a href={TG_LINK} target="_blank" rel="noopener noreferrer">
+                      <button style={actionIconBtn('#0088cc')}><TelegramIcon /></button>
+                    </a>
+                    <button
+                      style={{
+                        flex:           1,
+                        height:         48,
+                        borderRadius:   10,
+                        background:     PRIMARY_RED,
+                        border:         'none',
+                        cursor:         'pointer',
+                        color:          '#fff',
+                        fontWeight:     700,
+                        fontSize:       14,
+                        display:        'flex',
+                        alignItems:     'center',
+                        justifyContent: 'center',
+                        gap:            6,
+                        opacity:        profileChecking ? 0.7 : 1,
+                      }}
+                      onClick={() => handleBookingClick('rental')}
+                      disabled={profileChecking}
+                    >
+                      <ShoppingCartOutlined style={{ fontSize: 16 }} />
+                      {profileChecking ? 'Tekshirilmoqda...' : 'Hozir olish'}
+                    </button>
+                  </div>
+
+                  {/* Bron qilish — to'liq kenglik */}
+                  <button
+                    style={{
+                      width:          '100%',
+                      height:         44,
+                      borderRadius:   10,
+                      background:     token.colorBgContainer,
+                      border:         `2px solid ${PRIMARY_RED}`,
+                      cursor:         'pointer',
+                      color:          PRIMARY_RED,
+                      fontWeight:     700,
+                      fontSize:       14,
+                      display:        'flex',
+                      alignItems:     'center',
+                      justifyContent: 'center',
+                      gap:            6,
+                    }}
+                    onClick={() => handleBookingClick('reservation')}
+                  >
+                    <CalendarOutlined style={{ fontSize: 15 }} />
+                    Bron qilib qo'yish
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </Col>
