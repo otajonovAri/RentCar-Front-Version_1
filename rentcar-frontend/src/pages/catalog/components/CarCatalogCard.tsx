@@ -83,18 +83,6 @@ export default function CarCatalogCard({ car }: Props) {
             {status.label}
           </div>
 
-          {/* Brand logo */}
-          {logo && (
-            <div style={{
-              position: 'absolute', bottom: 6, left: 6,
-              width: 24, height: 24, borderRadius: 6,
-              background: 'rgba(255,255,255,0.9)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <img src={logo} alt={car.brand} style={{ width: 16, height: 16, objectFit: 'contain' }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-            </div>
-          )}
         </div>
 
         {/* Info — right 62% */}
@@ -103,18 +91,31 @@ export default function CarCatalogCard({ car }: Props) {
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           minWidth: 0,
         }}>
-          {/* Name + category */}
-          <div>
-            <div style={{
-              fontWeight: 800, fontSize: 13,
-              color: token.colorText,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {name.toUpperCase()}
+          {/* Name + logo + category */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontWeight: 800, fontSize: 13,
+                color: token.colorText,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {name.toUpperCase()}
+              </div>
+              <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 1 }}>
+                {car.categoryName ?? 'Sedan'} · {car.year}
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 1 }}>
-              {car.categoryName ?? 'Sedan'} · {car.year}
-            </div>
+            {logo && (
+              <div style={{
+                width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                background: token.colorFillAlter,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <img src={logo} alt={car.brand} style={{ width: 24, height: 24, objectFit: 'contain' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              </div>
+            )}
           </div>
 
           {/* Specs row */}
