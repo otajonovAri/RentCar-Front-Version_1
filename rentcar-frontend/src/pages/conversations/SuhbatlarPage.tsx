@@ -164,6 +164,13 @@ export default function SuhbatlarPage() {
     setMessages([])
   }
 
+  // ── Body scroll lock (sahifa scroll qilmasin) ────────────────────────────
+  useEffect(() => {
+    const prev = document.body.style.overflowY
+    document.body.style.overflowY = 'hidden'
+    return () => { document.body.style.overflowY = prev }
+  }, [])
+
   // ── Height ────────────────────────────────────────────────────────────────
   // Mobile: 56px header + 12px top padding + 60px bottom nav + 12px bottom padding = 140px
   // Desktop: 56px header + 24px top padding + 24px bottom padding = 104px

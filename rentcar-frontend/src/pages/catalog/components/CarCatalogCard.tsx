@@ -209,19 +209,6 @@ export default function CarCatalogCard({ car }: Props) {
 
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)' }} />
 
-        {logo && (
-          <div style={{
-            position: 'absolute', top: 10, left: 10,
-            width: 34, height: 34, borderRadius: 8,
-            background: 'rgba(255,255,255,0.92)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}>
-            <img src={logo} alt={car.brand} style={{ width: 24, height: 24, objectFit: 'contain' }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-          </div>
-        )}
-
         <div style={{
           position: 'absolute', top: 10, right: 10,
           padding: '3px 10px', borderRadius: 20,
@@ -232,11 +219,25 @@ export default function CarCatalogCard({ car }: Props) {
           {status.label}
         </div>
 
-        <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: 0.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
-            {name.toUpperCase()}
+        {/* Name + logo — rasmning pastki qismida */}
+        <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: 0.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+              {name.toUpperCase()}
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{car.categoryName ?? 'Sedan'}</div>
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{car.categoryName ?? 'Sedan'}</div>
+          {logo && (
+            <div style={{
+              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+              background: 'rgba(255,255,255,0.92)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            }}>
+              <img src={logo} alt={car.brand} style={{ width: 28, height: 28, objectFit: 'contain' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+            </div>
+          )}
         </div>
       </div>
 
