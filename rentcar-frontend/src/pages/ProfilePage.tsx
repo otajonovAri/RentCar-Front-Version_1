@@ -8,7 +8,7 @@ import {
   UserOutlined, EditOutlined, SaveOutlined, CloseOutlined,
   MailOutlined, PhoneOutlined, EnvironmentOutlined, IdcardOutlined,
   CameraOutlined, CheckCircleFilled, ClockCircleOutlined,
-  CalendarOutlined, LoadingOutlined,
+  CalendarOutlined, LoadingOutlined, StopOutlined, WarningFilled,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import dayjs from 'dayjs'
@@ -398,10 +398,42 @@ export default function ProfilePage() {
                 display: 'inline-block',
                 background: rc.bg, color: rc.color,
                 padding: '2px 12px', borderRadius: 20,
-                fontSize: 12, fontWeight: 600, marginBottom: 16,
+                fontSize: 12, fontWeight: 600, marginBottom: 12,
               }}>
                 {rc.label}
               </div>
+
+              {/* Blok holati banneri */}
+              {profile?.isBlocked && (
+                <div style={{
+                  marginBottom: 12, padding: '10px 14px', borderRadius: 10,
+                  background: 'linear-gradient(135deg, rgba(255,77,79,0.1), rgba(245,34,45,0.08))',
+                  border: '1.5px solid rgba(255,77,79,0.35)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <StopOutlined style={{ color: '#ff4d4f', fontSize: 13 }}/>
+                    <span style={{ fontWeight: 800, fontSize: 12, color: '#ff4d4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Hisobingiz bloklangan
+                    </span>
+                  </div>
+                  {profile.blockReason && (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5, marginBottom: 4 }}>
+                      <WarningFilled style={{ color: '#fa8c16', fontSize: 10, marginTop: 2, flexShrink: 0 }}/>
+                      <span style={{ fontSize: 11, color: '#595959', lineHeight: 1.5 }}>
+                        <strong>Sabab:</strong> {profile.blockReason}
+                      </span>
+                    </div>
+                  )}
+                  {profile.blockedUntil && (
+                    <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                      📅 {dayjs(profile.blockedUntil).format('DD.MM.YYYY HH:mm')} gacha
+                    </div>
+                  )}
+                  {!profile.blockedUntil && (
+                    <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>⚠️ Doimiy blok</div>
+                  )}
+                </div>
+              )}
 
               <Divider style={{ margin: '12px 0' }} />
 

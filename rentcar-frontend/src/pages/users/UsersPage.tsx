@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Input, Avatar, Spin, Pagination, Badge, Grid, theme,
+  Modal, Form, DatePicker, Popconfirm, message, Tooltip,
 } from 'antd'
 import {
   SearchOutlined, CrownFilled, SafetyCertificateFilled,
   TeamOutlined, UserOutlined, ShopFilled, EditOutlined,
   CheckCircleFilled, ClockCircleFilled, AppstoreFilled,
-  CalendarFilled, PhoneFilled,
+  CalendarFilled, PhoneFilled, StopOutlined, UnlockOutlined,
+  DeleteOutlined, LockOutlined, WarningFilled,
 } from '@ant-design/icons'
 import { format } from 'date-fns'
 import { usersApi } from '@/api/usersApi'
@@ -17,6 +19,8 @@ import { usePagination } from '@/hooks/usePagination'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAuthStore } from '@/store/authStore'
 import UserRoleModal from './components/UserRoleModal'
+import { getApiError } from '@/utils/apiError'
+import dayjs from 'dayjs'
 
 // ── Role config ────────────────────────────────────────────────────────────
 const ROLE_CFG: Record<UserRole, {
@@ -69,13 +73,19 @@ export default function UsersPage() {
   const screens    = Grid.useBreakpoint()
   const isMobile   = !screens.md
   const { role: editorRole } = useAuthStore()
+  const isSuperAdmin = editorRole === 'SuperAdmin'
 
-  const [data,         setData]         = useState<PaginatedResponse<UserDto> | null>(null)
-  const [loading,      setLoading]      = useState(false)
-  const [search,       setSearch]       = useState('')
-  const [roleFilter,   setRoleFilter]   = useState<UserRole | undefined>()
-  const [roleModalUser,setRoleModalUser]= useState<UserDto | null>(null)
-  const [hovered,      setHovered]      = useState<number | null>(null)
+  const [data,           setData]           = useState<PaginatedResponse<UserDto> | null>(null)
+  const [loading,        setLoading]        = useState(false)
+  const [search,         setSearch]         = useState('')
+  const [roleFilter,     setRoleFilter]     = useState<UserRole | undefined>()
+  const [blockedFilter,  setBlockedFilter]  = useState<boolean | undefined>()
+  const [roleModalUser,  setRoleModalUser]  = useState<UserDto | null>(null)
+  const [blockModalUser, setBlockModalUser] = useState<UserDto | null>(null)
+  const [blockLoading,   setBlockLoading]   = useState(false)
+  const [actionLoading,  setActionLoading]  = useState<number | null>(null)
+  const [hovered,        setHovered]        = useState<number | null>(null)
+  const [blockForm] = Form.useForm()
   const { page, pageSize, onChange, reset } = usePagination()
   const debouncedSearch = useDebounce(search)
 
@@ -86,12 +96,58 @@ export default function UsersPage() {
         page, pageSize,
         search: debouncedSearch || undefined,
         role: roleFilter,
+        isBlocked: blockedFilter,
       })
       setData(res.data)
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, debouncedSearch, roleFilter])
+  }, [page, pageSize, debouncedSearch, roleFilter, blockedFilter])
+
+  const handleBlock = async (values: { reason: string; blockedUntil?: dayjs.Dayjs | null }) => {
+    if (!blockModalUser) return
+    setBlockLoading(true)
+    try {
+      await usersApi.block(blockModalUser.id, {
+        reason: values.reason,
+        blockedUntil: values.blockedUntil ? values.blockedUntil.toISOString() : null,
+      })
+      message.success(`${blockModalUser.fullName} bloklandi`)
+      setBlockModalUser(null)
+      blockForm.resetFields()
+      fetchData()
+    } catch (e) {
+      message.error(getApiError(e))
+    } finally {
+      setBlockLoading(false)
+    }
+  }
+
+  const handleUnblock = async (userId: number, fullName: string) => {
+    setActionLoading(userId)
+    try {
+      await usersApi.unblock(userId)
+      message.success(`${fullName} razblok qilindi`)
+      fetchData()
+    } catch (e) {
+      message.error(getApiError(e))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDelete = async (userId: number, fullName: string) => {
+    setActionLoading(userId)
+    try {
+      await usersApi.delete(userId)
+      message.success(`${fullName} o'chirildi`)
+      fetchData()
+    } catch (e) {
+      message.error(getApiError(e))
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -201,12 +257,12 @@ export default function UsersPage() {
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {FILTER_ROLES.map(r => {
               const cfg    = r === 'all' ? null : ROLE_CFG[r as UserRole]
-              const active = r === 'all' ? !roleFilter : roleFilter === r
+              const active = r === 'all' ? (!roleFilter && blockedFilter === undefined) : (roleFilter === r && blockedFilter === undefined)
               const count  = r === 'all' ? total : roleCounts[r as UserRole] ?? 0
               return (
                 <button
                   key={r}
-                  onClick={() => { setRoleFilter(r === 'all' ? undefined : r as UserRole); reset() }}
+                  onClick={() => { setRoleFilter(r === 'all' ? undefined : r as UserRole); setBlockedFilter(undefined); reset() }}
                   style={{
                     display:'inline-flex', alignItems:'center', gap:5,
                     padding:'5px 13px', borderRadius:50,
@@ -238,6 +294,23 @@ export default function UsersPage() {
                 </button>
               )
             })}
+            {/* Bloklangan filter */}
+            <button
+              onClick={() => { setBlockedFilter(blockedFilter === true ? undefined : true); setRoleFilter(undefined); reset() }}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:5,
+                padding:'5px 13px', borderRadius:50,
+                border:`1.5px solid ${blockedFilter === true ? '#ff4d4f' : 'rgba(255,255,255,0.3)'}`,
+                background: blockedFilter === true ? 'rgba(255,77,79,0.3)' : 'rgba(255,255,255,0.08)',
+                backdropFilter:'blur(6px)',
+                color:'#fff', cursor:'pointer',
+                fontWeight: blockedFilter === true ? 700 : 500, fontSize:12,
+                transition:'all 0.18s',
+                boxShadow: blockedFilter === true ? '0 2px 10px rgba(255,77,79,0.4)' : 'none',
+              }}
+            >
+              <StopOutlined style={{ fontSize:11 }}/> Bloklangan
+            </button>
           </div>
         </div>
       </div>
@@ -316,10 +389,32 @@ export default function UsersPage() {
                   {/* Role color bar */}
                   <div style={{ height:4, background: cfg.gradient }}/>
 
+                  {/* Blocked banner */}
+                  {user.isBlocked && (
+                    <div style={{
+                      background: 'linear-gradient(90deg, #ff4d4f, #f5222d)',
+                      padding:'6px 14px',
+                      display:'flex', alignItems:'center', gap:6,
+                    }}>
+                      <LockOutlined style={{ color:'#fff', fontSize:11 }}/>
+                      <span style={{ color:'#fff', fontWeight:700, fontSize:11 }}>BLOKLANGAN</span>
+                      {user.blockedUntil && (
+                        <span style={{ color:'rgba(255,255,255,0.8)', fontSize:10, marginLeft:'auto' }}>
+                          {format(new Date(user.blockedUntil), 'dd.MM.yyyy')} gacha
+                        </span>
+                      )}
+                      {!user.blockedUntil && (
+                        <span style={{ color:'rgba(255,255,255,0.8)', fontSize:10, marginLeft:'auto' }}>Doimiy</span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Card header: avatar + name */}
                   <div style={{
                     padding:'16px 16px 12px',
-                    background: `linear-gradient(135deg,${cfg.bg},transparent)`,
+                    background: user.isBlocked
+                      ? 'linear-gradient(135deg, rgba(255,77,79,0.06), transparent)'
+                      : `linear-gradient(135deg,${cfg.bg},transparent)`,
                     display:'flex', alignItems:'center', gap:12,
                     borderBottom:`1px solid ${token.colorBorderSecondary}`,
                   }}>
@@ -328,10 +423,11 @@ export default function UsersPage() {
                         src={user.avatarUrl || undefined}
                         size={52}
                         style={{
-                          background: cfg.gradient,
+                          background: user.isBlocked ? 'linear-gradient(135deg,#ff4d4f,#f5222d)' : cfg.gradient,
                           fontWeight: 700, fontSize: 18,
                           border: `2px solid ${token.colorBgContainer}`,
-                          boxShadow: `0 3px 10px ${cfg.color}40`,
+                          boxShadow: user.isBlocked ? '0 3px 10px rgba(255,77,79,0.4)' : `0 3px 10px ${cfg.color}40`,
+                          filter: user.isBlocked ? 'grayscale(30%)' : 'none',
                         }}
                       >
                         {!user.avatarUrl && getInitials(user.fullName)}
@@ -340,7 +436,7 @@ export default function UsersPage() {
                       <div style={{
                         position:'absolute', bottom:2, right:2,
                         width:12, height:12, borderRadius:'50%',
-                        background: isOnline ? '#52c41a' : '#d9d9d9',
+                        background: user.isBlocked ? '#ff4d4f' : isOnline ? '#52c41a' : '#d9d9d9',
                         border:`2px solid ${token.colorBgContainer}`,
                       }}/>
                     </div>
@@ -348,8 +444,10 @@ export default function UsersPage() {
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{
                         fontWeight:700, fontSize:14,
-                        color:token.colorText, lineHeight:1.3,
+                        color: user.isBlocked ? token.colorTextSecondary : token.colorText,
+                        lineHeight:1.3,
                         overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                        textDecoration: user.isBlocked ? 'line-through' : 'none',
                       }}>
                         {user.fullName}
                       </div>
@@ -393,6 +491,21 @@ export default function UsersPage() {
                       }
                     </div>
 
+                    {/* Block reason */}
+                    {user.isBlocked && user.blockReason && (
+                      <div style={{
+                        display:'flex', alignItems:'flex-start', gap:6,
+                        padding:'6px 10px', borderRadius:8,
+                        background:'rgba(255,77,79,0.08)',
+                        border:'1px solid rgba(255,77,79,0.2)',
+                      }}>
+                        <WarningFilled style={{ color:'#ff4d4f', fontSize:11, marginTop:1, flexShrink:0 }}/>
+                        <span style={{ fontSize:11, color:'#ff4d4f', lineHeight:1.4 }}>
+                          <strong>Sabab:</strong> {user.blockReason}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Divider */}
                     <div style={{ height:1, background:token.colorBorderSecondary, margin:'2px 0' }}/>
 
@@ -416,27 +529,96 @@ export default function UsersPage() {
                     </div>
                   </div>
 
-                  {/* Footer: edit button */}
-                  {canEditUser && (
+                  {/* Footer: actions */}
+                  {(canEditUser || isSuperAdmin) && (
                     <div style={{
                       padding:'10px 16px',
                       borderTop:`1px solid ${token.colorBorderSecondary}`,
                       background:token.colorFillAlter,
+                      display:'flex', gap:6,
                     }}>
-                      <button
-                        onClick={() => setRoleModalUser(user)}
-                        style={{
-                          width:'100%', padding:'7px 0', borderRadius:8,
-                          background: isHov ? cfg.gradient : 'transparent',
-                          border:`1.5px solid ${isHov ? 'transparent' : cfg.color}`,
-                          color: isHov ? '#fff' : cfg.color,
-                          fontWeight:700, fontSize:13, cursor:'pointer',
-                          display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-                          transition:'all 0.18s',
-                        }}
-                      >
-                        <EditOutlined/> Rol o'zgartirish
-                      </button>
+                      {/* Role change — Admin+SuperAdmin */}
+                      {canEditUser && (
+                        <button
+                          onClick={() => setRoleModalUser(user)}
+                          style={{
+                            flex:1, padding:'7px 0', borderRadius:8,
+                            background: isHov ? cfg.gradient : 'transparent',
+                            border:`1.5px solid ${isHov ? 'transparent' : cfg.color}`,
+                            color: isHov ? '#fff' : cfg.color,
+                            fontWeight:700, fontSize:12, cursor:'pointer',
+                            display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                            transition:'all 0.18s',
+                          }}
+                        >
+                          <EditOutlined/> Rol
+                        </button>
+                      )}
+
+                      {/* Block/Unblock — SuperAdmin only */}
+                      {isSuperAdmin && user.role !== 'SuperAdmin' && (
+                        user.isBlocked ? (
+                          <button
+                            onClick={() => handleUnblock(user.id, user.fullName)}
+                            disabled={actionLoading === user.id}
+                            style={{
+                              flex:1, padding:'7px 0', borderRadius:8,
+                              background:'rgba(82,196,26,0.1)',
+                              border:'1.5px solid #52c41a',
+                              color:'#52c41a',
+                              fontWeight:700, fontSize:12, cursor:'pointer',
+                              display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                              transition:'all 0.18s', opacity: actionLoading === user.id ? 0.6 : 1,
+                            }}
+                          >
+                            <UnlockOutlined/> Razblok
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => { setBlockModalUser(user); blockForm.resetFields() }}
+                            style={{
+                              flex:1, padding:'7px 0', borderRadius:8,
+                              background:'rgba(255,77,79,0.08)',
+                              border:'1.5px solid #ff4d4f',
+                              color:'#ff4d4f',
+                              fontWeight:700, fontSize:12, cursor:'pointer',
+                              display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                              transition:'all 0.18s',
+                            }}
+                          >
+                            <StopOutlined/> Bloklash
+                          </button>
+                        )
+                      )}
+
+                      {/* Delete — SuperAdmin only */}
+                      {isSuperAdmin && user.role !== 'SuperAdmin' && (
+                        <Tooltip title="O'chirish (soft delete)">
+                          <Popconfirm
+                            title={`${user.fullName}ni o'chirmoqchimisiz?`}
+                            description="Bu amal foydalanuvchini tizimdan o'chirib yuboradi."
+                            onConfirm={() => handleDelete(user.id, user.fullName)}
+                            okText="Ha, o'chir"
+                            cancelText="Bekor"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <button
+                              disabled={actionLoading === user.id}
+                              style={{
+                                width:34, height:34, borderRadius:8,
+                                background:'rgba(255,77,79,0.08)',
+                                border:'1.5px solid rgba(255,77,79,0.4)',
+                                color:'#ff4d4f',
+                                cursor:'pointer',
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                flexShrink:0, opacity: actionLoading === user.id ? 0.6 : 1,
+                              }}
+                            >
+                              <DeleteOutlined style={{ fontSize:13 }}/>
+                            </button>
+                          </Popconfirm>
+                        </Tooltip>
+                      )}
                     </div>
                   )}
                 </div>
@@ -467,6 +649,108 @@ export default function UsersPage() {
         onClose={() => setRoleModalUser(null)}
         onSuccess={() => { setRoleModalUser(null); fetchData() }}
       />
+
+      {/* ── Block Modal ───────────────────────────────────────────────────── */}
+      <Modal
+        open={!!blockModalUser}
+        onCancel={() => { setBlockModalUser(null); blockForm.resetFields() }}
+        title={
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{
+              width:36, height:36, borderRadius:10,
+              background:'rgba(255,77,79,0.1)',
+              border:'1px solid rgba(255,77,79,0.3)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              <StopOutlined style={{ color:'#ff4d4f', fontSize:16 }}/>
+            </div>
+            <div>
+              <div style={{ fontWeight:800, fontSize:15, lineHeight:1.2 }}>Foydalanuvchini bloklash</div>
+              {blockModalUser && (
+                <div style={{ fontSize:12, color:'#8c8c8c', fontWeight:400 }}>{blockModalUser.fullName}</div>
+              )}
+            </div>
+          </div>
+        }
+        footer={null}
+        width={440}
+      >
+        <Form form={blockForm} layout="vertical" onFinish={handleBlock} style={{ marginTop:16 }}>
+          <Form.Item
+            name="reason"
+            label={<span style={{ fontWeight:600 }}>Blok sababi <span style={{ color:'#ff4d4f' }}>*</span></span>}
+            rules={[
+              { required: true, message: 'Sabab kiritish majburiy' },
+              { min: 5, message: "Kamida 5 ta belgi kiriting" },
+              { max: 500, message: "Ko'pi bilan 500 ta belgi" },
+            ]}
+          >
+            <textarea
+              rows={3}
+              placeholder="Nima uchun bloklanyapti? (qoidabuzarlik, firibgarlik, spam...)"
+              style={{
+                width:'100%', borderRadius:8, padding:'8px 12px',
+                border:`1px solid rgba(255,77,79,0.4)`,
+                fontSize:13, resize:'vertical', minHeight:80,
+                background:'rgba(255,77,79,0.04)',
+                outline:'none', color:'inherit',
+                fontFamily:'inherit',
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="blockedUntil"
+            label={<span style={{ fontWeight:600 }}>Blok muddati <span style={{ color:'#8c8c8c', fontWeight:400 }}>(bo'sh = doimiy)</span></span>}
+          >
+            <DatePicker
+              showTime
+              format="DD.MM.YYYY HH:mm"
+              placeholder="Sana tanlang (ixtiyoriy)"
+              disabledDate={d => d && d.isBefore(dayjs())}
+              style={{ width:'100%' }}
+            />
+          </Form.Item>
+
+          <div style={{
+            marginBottom:16, padding:'10px 14px', borderRadius:8,
+            background:'rgba(255,77,79,0.06)',
+            border:'1px solid rgba(255,77,79,0.15)',
+            fontSize:12, color:'#8c8c8c', lineHeight:1.6,
+          }}>
+            ⚠️ Bloklangan foydalanuvchi tizimga kira olmaydi va blok sababini ko'ra oladi.
+          </div>
+
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => { setBlockModalUser(null); blockForm.resetFields() }}
+              style={{
+                padding:'8px 20px', borderRadius:8,
+                background:'transparent', border:`1px solid ${token.colorBorderSecondary}`,
+                cursor:'pointer', fontSize:13, fontWeight:600,
+                color:token.colorTextSecondary,
+              }}
+            >
+              Bekor
+            </button>
+            <button
+              type="submit"
+              disabled={blockLoading}
+              style={{
+                padding:'8px 24px', borderRadius:8,
+                background: blockLoading ? '#ff7875' : 'linear-gradient(135deg,#ff4d4f,#f5222d)',
+                border:'none', cursor: blockLoading ? 'not-allowed' : 'pointer',
+                fontSize:13, fontWeight:700, color:'#fff',
+                display:'flex', alignItems:'center', gap:6,
+                boxShadow:'0 2px 8px rgba(255,77,79,0.4)',
+              }}
+            >
+              <StopOutlined/> {blockLoading ? 'Bloklanyapti...' : 'Bloklash'}
+            </button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   )
 }

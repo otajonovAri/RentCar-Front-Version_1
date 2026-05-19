@@ -13,6 +13,11 @@ export interface UserDto {
   emailConfirmed: boolean
   lastActive: string | null
   createdAt: string
+  // Block info
+  isBlocked: boolean
+  blockReason: string | null
+  blockedAt: string | null
+  blockedUntil: string | null
 }
 
 export interface UpdateProfileDto {
@@ -35,9 +40,15 @@ export interface UpdateRoleDto {
   role: UserRole
 }
 
+export interface BlockUserDto {
+  reason: string
+  blockedUntil?: string | null
+}
+
 export interface UsersFilter {
   page: number
   pageSize: number
   search?: string
   role?: UserRole
+  isBlocked?: boolean
 }
