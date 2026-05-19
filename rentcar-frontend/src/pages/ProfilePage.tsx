@@ -432,60 +432,140 @@ export default function ProfilePage() {
           </Card>
         </Col>
 
-        {/* ── O'ng: Tablar ───────────────────────────────────────────── */}
-        <Col xs={24} md={15}>
-          <Card style={{ background: cardBg }}>
-            <Tabs
-              defaultActiveKey="personal"
-              items={[
-                {
-                  key: 'personal',
-                  label: (
-                    <span><UserOutlined style={{ marginRight: 6 }} />Shaxsiy ma'lumotlar</span>
-                  ),
-                  children: (
-                    <>
-                      {!editing && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                          <Button
-                            type="primary" ghost
-                            icon={<EditOutlined />}
-                            onClick={() => setEditing(true)}
-                          >
-                            Tahrirlash
-                          </Button>
-                        </div>
-                      )}
-                      {personalTab}
-                    </>
-                  ),
-                },
-                {
-                  key: 'license',
-                  label: (
-                    <span><IdcardOutlined style={{ marginRight: 6 }} />Haydovchilik guvohnomasi</span>
-                  ),
-                  children: (
-                    <>
-                      {!licenseEditing && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                          <Button
-                            type="primary" ghost
-                            icon={<EditOutlined />}
-                            onClick={() => setLicenseEditing(true)}
-                          >
-                            Tahrirlash
-                          </Button>
-                        </div>
-                      )}
-                      {licenseTab}
-                    </>
-                  ),
-                },
-              ]}
-            />
-          </Card>
-        </Col>
+        {/* ── O'ng: Mobile → 2 ta alohida karta | Desktop → Tabs ─── */}
+        {isMobile ? (
+          <>
+            {/* ── Shaxsiy ma'lumotlar kartasi ── */}
+            <Col xs={24}>
+              <Card
+                style={{ background: cardBg }}
+                styles={{ body: { padding: '16px' } }}
+              >
+                {/* Sarlavha qatori */}
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', marginBottom: 16,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: 'rgba(22,119,255,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <UserOutlined style={{ fontSize: 15, color: '#1677ff' }} />
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: themeToken.colorText }}>
+                      Shaxsiy ma'lumotlar
+                    </span>
+                  </div>
+                  {!editing && (
+                    <Button
+                      type="primary" ghost size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => setEditing(true)}
+                      style={{ borderRadius: 8 }}
+                    >
+                      Tahrirlash
+                    </Button>
+                  )}
+                </div>
+                {personalTab}
+              </Card>
+            </Col>
+
+            {/* ── Haydovchilik guvohnomasi kartasi ── */}
+            <Col xs={24}>
+              <Card
+                style={{ background: cardBg }}
+                styles={{ body: { padding: '16px' } }}
+              >
+                {/* Sarlavha qatori */}
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between', marginBottom: 16,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: 'rgba(82,196,26,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <IdcardOutlined style={{ fontSize: 15, color: '#52c41a' }} />
+                    </div>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: themeToken.colorText }}>
+                      Haydovchilik guvohnomasi
+                    </span>
+                  </div>
+                  {!licenseEditing && (
+                    <Button
+                      type="primary" ghost size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => setLicenseEditing(true)}
+                      style={{ borderRadius: 8 }}
+                    >
+                      Tahrirlash
+                    </Button>
+                  )}
+                </div>
+                {licenseTab}
+              </Card>
+            </Col>
+          </>
+        ) : (
+          <Col xs={24} md={15}>
+            <Card style={{ background: cardBg }}>
+              <Tabs
+                defaultActiveKey="personal"
+                items={[
+                  {
+                    key: 'personal',
+                    label: (
+                      <span><UserOutlined style={{ marginRight: 6 }} />Shaxsiy ma'lumotlar</span>
+                    ),
+                    children: (
+                      <>
+                        {!editing && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                            <Button
+                              type="primary" ghost
+                              icon={<EditOutlined />}
+                              onClick={() => setEditing(true)}
+                            >
+                              Tahrirlash
+                            </Button>
+                          </div>
+                        )}
+                        {personalTab}
+                      </>
+                    ),
+                  },
+                  {
+                    key: 'license',
+                    label: (
+                      <span><IdcardOutlined style={{ marginRight: 6 }} />Haydovchilik guvohnomasi</span>
+                    ),
+                    children: (
+                      <>
+                        {!licenseEditing && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                            <Button
+                              type="primary" ghost
+                              icon={<EditOutlined />}
+                              onClick={() => setLicenseEditing(true)}
+                            >
+                              Tahrirlash
+                            </Button>
+                          </div>
+                        )}
+                        {licenseTab}
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            </Card>
+          </Col>
+        )}
       </Row>
     </Spin>
   )
