@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Drawer, Tag, Image, Space, Button, Popconfirm,
+  Drawer, Image, Space, Button, Popconfirm,
   message, Divider, Upload, Spin,
 } from 'antd'
 import {
