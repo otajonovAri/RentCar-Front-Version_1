@@ -436,7 +436,7 @@ export default function ProfilePage() {
           <Row gutter={12}>
             {[
               { label: 'Ijaralar', value: fullHistory.totalRentals, icon: <CarOutlined />, color: '#1677ff' },
-              { label: 'Jami to'lov', value: `${fullHistory.totalSpent.toLocaleString()} UZS`, icon: <DollarOutlined />, color: '#52c41a' },
+              { label: "Jami to'lov", value: `${fullHistory.totalSpent.toLocaleString()} UZS`, icon: <DollarOutlined />, color: '#52c41a' },
               { label: 'Jarimalar', value: fullHistory.totalFines, icon: <ExclamationCircleOutlined />, color: '#fa8c16' },
               { label: 'Faol ijara', value: fullHistory.activeRentals, icon: <ClockCircleFilled />, color: '#722ed1' },
             ].map((s) => (
