@@ -25,23 +25,16 @@ export default defineConfig({
             return 'react-vendor'
           }
 
-          // Ant Design — icons + core together to avoid circular deps
+          // Ant Design — ALL in one chunk to prevent circular init errors
+          // (antd, @ant-design/icons, rc-*, @rc-component, cssinjs are tightly coupled)
           if (id.includes('node_modules/antd/') ||
-              id.includes('node_modules/@ant-design/')) {
-            return 'antd-core'
-          }
-
-          // RC components (used internally by antd)
-          if (id.includes('node_modules/rc-') ||
-              id.includes('node_modules/@rc-component/')) {
-            return 'antd-rc'
-          }
-
-          // CSS-in-JS (used by antd v5)
-          if (id.includes('node_modules/@emotion/') ||
+              id.includes('node_modules/@ant-design/') ||
+              id.includes('node_modules/rc-') ||
+              id.includes('node_modules/@rc-component/') ||
+              id.includes('node_modules/@emotion/') ||
               id.includes('node_modules/stylis') ||
               id.includes('node_modules/cssinjs')) {
-            return 'antd-cssinjs'
+            return 'antd-vendor'
           }
 
           // State / HTTP
@@ -63,7 +56,7 @@ export default defineConfig({
         },
       },
     },
-    // antd bundle is inherently ~600-800 kB gzipped; raise limit to suppress noise
+    // antd v5 bundle is inherently large (~1.1 MB); raise limit to avoid noise
     chunkSizeWarningLimit: 1500,
   },
 })
