@@ -2,23 +2,27 @@ import { useState, useEffect } from 'react'
 import {
   Card, Form, Input, DatePicker, Button, Row, Col, Avatar,
   Typography, Tag, Spin, Divider, message, Space, Tabs, Upload,
-  Badge, Tooltip, theme, Grid,
+  Badge, Tooltip, theme, Grid, Modal, Alert, Table, Statistic,
+  Popconfirm,
 } from 'antd'
 import {
   UserOutlined, EditOutlined, SaveOutlined, CloseOutlined,
   MailOutlined, PhoneOutlined, EnvironmentOutlined, IdcardOutlined,
   CameraOutlined, CheckCircleFilled, ClockCircleOutlined,
   CalendarOutlined, LoadingOutlined, StopOutlined, WarningFilled,
+  DeleteOutlined, HistoryOutlined, ExclamationCircleOutlined,
+  CarOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleFilled,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import dayjs from 'dayjs'
 import { useAuthStore } from '@/store/authStore'
-// themeStore import — ProfilePage colorBgContainer tokenidan foydalanadi, shuning uchun re-render kerak emas
-
 import { usersApi } from '@/api/usersApi'
 import { authApi } from '@/api/authApi'
 import { uploadImage } from '@/api/uploadApi'
-import type { UserDto, UpdateProfileDto, UpdateLicenseDto } from '@/types/users'
+import type {
+  UserDto, UpdateProfileDto, UpdateLicenseDto,
+  DeletionBlockingInfoDto, UserFullHistoryDto,
+} from '@/types/users'
 
 const { Title, Text } = Typography
 
@@ -38,6 +42,16 @@ const GRADIENT_BY_ROLE: Record<string, string> = {
   Customer:   'linear-gradient(135deg, #1677ff, #36cfc9)',
 }
 
+const STATUS_COLOR: Record<string, string> = {
+  Pending:   'orange',
+  Active:    'blue',
+  Completed: 'green',
+  Cancelled: 'red',
+  Paid:      'green',
+  Failed:    'red',
+  Disputed:  'purple',
+}
+
 export default function ProfilePage() {
   const { userId, fullName, email, role, setAuth, updateAvatar, accessToken, refreshToken } = useAuthStore()
   const { token: themeToken } = theme.useToken()
@@ -54,6 +68,17 @@ export default function ProfilePage() {
   const [licenseSaving, setLicenseSaving]   = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [licenseImgUploading, setLicenseImgUploading] = useState(false)
+
+  // ── Hisob o'chirish holati ────────────────────────────────────────────────
+  const [deletionModalOpen, setDeletionModalOpen]   = useState(false)
+  const [eligibility, setEligibility]               = useState<DeletionBlockingInfoDto | null>(null)
+  const [eligibilityLoading, setEligibilityLoading] = useState(false)
+  const [deletionLoading, setDeletionLoading]       = useState(false)
+  const [deletionSent, setDeletionSent]             = useState(false)
+
+  // ── To'liq tarix ─────────────────────────────────────────────────────────
+  const [fullHistory, setFullHistory]         = useState<UserFullHistoryDto | null>(null)
+  const [historyLoading, setHistoryLoading]   = useState(false)
 
   const loadProfile = async () => {
     if (!userId) return
@@ -75,6 +100,19 @@ export default function ProfilePage() {
       })
     } catch {
       message.error("Profil ma'lumotlarini olishda xatolik")
+    }
+  }
+
+  const loadHistory = async () => {
+    if (!userId) return
+    setHistoryLoading(true)
+    try {
+      const res = await usersApi.getFullHistory(userId)
+      setFullHistory(res.data)
+    } catch {
+      message.error('Tarixni yuklashda xatolik')
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -157,7 +195,7 @@ export default function ProfilePage() {
       }
       await usersApi.updateLicense(userId, payload)
       await loadProfile()
-      message.success('Guvohnoma ma\'lumotlari yangilandi')
+      message.success("Guvohnoma ma'lumotlari yangilandi")
       setLicenseEditing(false)
     } catch {
       message.error('Guvohnomani yangilashda xatolik')
@@ -187,6 +225,37 @@ export default function ProfilePage() {
     if (!ok) { message.error('Faqat JPG, PNG yoki WebP yuklanadi!'); return Upload.LIST_IGNORE }
     if (file.size / 1024 / 1024 >= 5) { message.error("5 MB dan kichik bo'lishi kerak!"); return Upload.LIST_IGNORE }
     return true
+  }
+
+  // ── Hisob o'chirish ────────────────────────────────────────────────────────
+  const handleOpenDeletion = async () => {
+    setDeletionSent(false)
+    setEligibility(null)
+    setDeletionModalOpen(true)
+    setEligibilityLoading(true)
+    try {
+      const res = await usersApi.checkDeletionEligibility()
+      setEligibility(res.data)
+    } catch {
+      message.error("Tekshirishda xatolik yuz berdi")
+      setDeletionModalOpen(false)
+    } finally {
+      setEligibilityLoading(false)
+    }
+  }
+
+  const handleRequestDeletion = async () => {
+    setDeletionLoading(true)
+    try {
+      await usersApi.requestDeletion()
+      setDeletionSent(true)
+      message.success("O'chirish so'rovingiz yuborildi!")
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string; detail?: string } } }
+      message.error(e?.response?.data?.message ?? e?.response?.data?.detail ?? "Xatolik yuz berdi")
+    } finally {
+      setDeletionLoading(false)
+    }
   }
 
   const displayName  = profile?.fullName  ?? fullName  ?? 'Foydalanuvchi'
@@ -264,6 +333,28 @@ export default function ProfilePage() {
           </Button>
         </div>
       )}
+
+      {/* O'chirish tugmasi — pastda */}
+      {!editing && displayRole === 'Customer' && (
+        <div style={{ marginTop: 32, borderTop: `1px dashed ${themeToken.colorBorderSecondary}`, paddingTop: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <Text strong style={{ display: 'block', color: themeToken.colorText }}>Hisobni o'chirish</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Hisobingizni o'chirishni so'rashingiz mumkin. Admin ko'rib chiqgach bajariladi.
+              </Text>
+            </div>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleOpenDeletion}
+              style={{ flexShrink: 0 }}
+            >
+              O'chirish
+            </Button>
+          </div>
+        </div>
+      )}
     </Form>
   )
 
@@ -330,6 +421,124 @@ export default function ProfilePage() {
         </div>
       )}
     </Form>
+  )
+
+  // ── To'liq tarix tab ─────────────────────────────────────────────────────
+  const historyTab = (
+    <Spin spinning={historyLoading}>
+      {!fullHistory ? (
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <Text type="secondary">Tarix yuklanmagan</Text>
+        </div>
+      ) : (
+        <Space direction="vertical" style={{ width: '100%' }} size={24}>
+          {/* Statistika */}
+          <Row gutter={12}>
+            {[
+              { label: 'Ijaralar', value: fullHistory.totalRentals, icon: <CarOutlined />, color: '#1677ff' },
+              { label: 'Jami to'lov', value: `${fullHistory.totalSpent.toLocaleString()} UZS`, icon: <DollarOutlined />, color: '#52c41a' },
+              { label: 'Jarimalar', value: fullHistory.totalFines, icon: <ExclamationCircleOutlined />, color: '#fa8c16' },
+              { label: 'Faol ijara', value: fullHistory.activeRentals, icon: <ClockCircleFilled />, color: '#722ed1' },
+            ].map((s) => (
+              <Col xs={12} sm={6} key={s.label}>
+                <Card size="small" styles={{ body: { padding: '10px 14px' } }}>
+                  <Statistic
+                    title={<span style={{ fontSize: 11 }}>{s.label}</span>}
+                    value={s.value}
+                    valueStyle={{ fontSize: 16, color: s.color }}
+                    prefix={s.icon}
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+
+          {/* Jarimalar ogohlantirishi */}
+          {fullHistory.unpaidFines > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              icon={<WarningFilled />}
+              message={`${fullHistory.unpaidFines} ta to'lanmagan jarima`}
+              description={`Umumiy miqdor: ${fullHistory.unpaidFineAmount.toLocaleString()} UZS`}
+            />
+          )}
+
+          {/* Ijaralar jadvali */}
+          <div>
+            <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
+              <CarOutlined style={{ marginRight: 6 }} />Ijaralar ({fullHistory.totalRentals})
+            </Text>
+            <Table
+              size="small"
+              dataSource={fullHistory.rentals}
+              rowKey="id"
+              pagination={{ pageSize: 5, size: 'small' }}
+              scroll={{ x: 600 }}
+              columns={[
+                { title: 'Mashina', dataIndex: 'carBrand', render: (_, r) => `${r.carBrand} ${r.carModel}`, width: 140 },
+                { title: 'Davr', dataIndex: 'startDate', width: 120, render: (_, r) =>
+                    `${dayjs(r.startDate).format('DD.MM')} – ${dayjs(r.endDate).format('DD.MM.YY')}` },
+                { title: 'Summa', dataIndex: 'totalAmount', render: (v: number) => `${v.toLocaleString()} UZS`, width: 120 },
+                { title: 'Holat', dataIndex: 'status', width: 90, render: (v: string) =>
+                    <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag> },
+                { title: 'Jarima', dataIndex: 'fineCount', width: 70, render: (v: number, r) =>
+                    v > 0 ? <Tag color="red">{v} ta</Tag> : <CheckCircleOutlined style={{ color: '#52c41a' }} /> },
+              ]}
+            />
+          </div>
+
+          {/* Bronlar */}
+          {fullHistory.reservations.length > 0 && (
+            <div>
+              <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
+                <ClockCircleOutlined style={{ marginRight: 6 }} />Bronlar ({fullHistory.totalReservations})
+              </Text>
+              <Table
+                size="small"
+                dataSource={fullHistory.reservations}
+                rowKey="id"
+                pagination={{ pageSize: 5, size: 'small' }}
+                scroll={{ x: 500 }}
+                columns={[
+                  { title: 'Mashina', dataIndex: 'carBrand', render: (_, r) => `${r.carBrand} ${r.carModel}`, width: 140 },
+                  { title: 'Davr', dataIndex: 'startDate', width: 140, render: (_, r) =>
+                      `${dayjs(r.startDate).format('DD.MM')} – ${dayjs(r.endDate).format('DD.MM.YY')}` },
+                  { title: 'Hisob', dataIndex: 'estimatedAmount', width: 120,
+                    render: (v: number | null) => v ? `${v.toLocaleString()} UZS` : '—' },
+                  { title: 'Holat', dataIndex: 'status', width: 90,
+                    render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag> },
+                ]}
+              />
+            </div>
+          )}
+
+          {/* Jarimalar */}
+          {fullHistory.fines.length > 0 && (
+            <div>
+              <Text strong style={{ fontSize: 14, marginBottom: 8, display: 'block' }}>
+                <ExclamationCircleOutlined style={{ marginRight: 6 }} />Jarimalar ({fullHistory.totalFines})
+              </Text>
+              <Table
+                size="small"
+                dataSource={fullHistory.fines}
+                rowKey="id"
+                pagination={{ pageSize: 5, size: 'small' }}
+                scroll={{ x: 500 }}
+                columns={[
+                  { title: 'Tavsif', dataIndex: 'description', ellipsis: true },
+                  { title: 'Miqdor', dataIndex: 'amount', width: 110, render: (v: number) => `${v.toLocaleString()} UZS` },
+                  { title: 'Holat', dataIndex: 'status', width: 90,
+                    render: (v: string) => <Tag color={STATUS_COLOR[v] ?? 'default'}>{v}</Tag> },
+                  { title: 'Sana', dataIndex: 'issuedDate', width: 100,
+                    render: (v: string) => dayjs(v).format('DD.MM.YYYY') },
+                ]}
+              />
+            </div>
+          )}
+        </Space>
+      )}
+    </Spin>
   )
 
   return (
@@ -473,7 +682,6 @@ export default function ProfilePage() {
                 style={{ background: cardBg }}
                 styles={{ body: { padding: '16px' } }}
               >
-                {/* Sarlavha qatori */}
                 <div style={{
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'space-between', marginBottom: 16,
@@ -511,7 +719,6 @@ export default function ProfilePage() {
                 style={{ background: cardBg }}
                 styles={{ body: { padding: '16px' } }}
               >
-                {/* Sarlavha qatori */}
                 <div style={{
                   display: 'flex', alignItems: 'center',
                   justifyContent: 'space-between', marginBottom: 16,
@@ -542,12 +749,38 @@ export default function ProfilePage() {
                 {licenseTab}
               </Card>
             </Col>
+
+            {/* ── Tarix kartasi (mobile) ── */}
+            <Col xs={24}>
+              <Card
+                style={{ background: cardBg }}
+                styles={{ body: { padding: '16px' } }}
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <HistoryOutlined style={{ color: '#722ed1' }} />
+                    <span>Faoliyat tarixi</span>
+                  </div>
+                }
+                extra={
+                  <Button size="small" onClick={loadHistory} loading={historyLoading}>
+                    Yuklash
+                  </Button>
+                }
+              >
+                {historyTab}
+              </Card>
+            </Col>
           </>
         ) : (
           <Col xs={24} md={15}>
             <Card style={{ background: cardBg }}>
               <Tabs
                 defaultActiveKey="personal"
+                onChange={(key) => {
+                  if (key === 'history' && !fullHistory && !historyLoading) {
+                    loadHistory()
+                  }
+                }}
                 items={[
                   {
                     key: 'personal',
@@ -593,12 +826,139 @@ export default function ProfilePage() {
                       </>
                     ),
                   },
+                  {
+                    key: 'history',
+                    label: (
+                      <span><HistoryOutlined style={{ marginRight: 6 }} />Faoliyat tarixi</span>
+                    ),
+                    children: historyTab,
+                  },
                 ]}
               />
             </Card>
           </Col>
         )}
       </Row>
+
+      {/* ── Hisob o'chirish modali ────────────────────────────────────────── */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <DeleteOutlined style={{ color: '#ff4d4f' }} />
+            <span>Hisobni o'chirish so'rovi</span>
+          </div>
+        }
+        open={deletionModalOpen}
+        onCancel={() => { setDeletionModalOpen(false); setDeletionSent(false) }}
+        footer={null}
+        width={480}
+      >
+        <Spin spinning={eligibilityLoading}>
+          {deletionSent ? (
+            // Muvaffaqiyatli yuborildi
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <CheckCircleOutlined style={{ fontSize: 52, color: '#52c41a', marginBottom: 16 }} />
+              <Title level={4} style={{ marginBottom: 8 }}>So'rovingiz yuborildi!</Title>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                Admin yoki SuperAdmin ko'rib chiqadi va natija haqida xabar beriladi.
+                So'rov ko'rib chiqilguncha hisobingiz faol bo'lib qoladi.
+              </Text>
+              <Button type="primary" onClick={() => { setDeletionModalOpen(false); setDeletionSent(false) }}>
+                Yopish
+              </Button>
+            </div>
+          ) : eligibility && !eligibility.canDelete ? (
+            // Bloklash shartlari bor
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <Alert
+                type="error"
+                showIcon
+                message="Hisobni o'chirib bo'lmaydi"
+                description="Quyidagi muammolarni bartaraf etib, qaytadan urinib ko'ring:"
+              />
+
+              {eligibility.activeRentalsCount > 0 && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.2)',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <CarOutlined style={{ color: '#ff4d4f', fontSize: 18, flexShrink: 0 }} />
+                  <div>
+                    <Text strong style={{ color: '#ff4d4f' }}>Faol/kutilayotgan ijaralar</Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      {eligibility.activeRentalsCount} ta faol ijara mavjud
+                    </Text>
+                  </div>
+                </div>
+              )}
+
+              {eligibility.pendingReservationsCount > 0 && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <ClockCircleOutlined style={{ color: '#fa8c16', fontSize: 18, flexShrink: 0 }} />
+                  <div>
+                    <Text strong style={{ color: '#fa8c16' }}>Kutilayotgan bronlar</Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      {eligibility.pendingReservationsCount} ta bron kutilmoqda
+                    </Text>
+                  </div>
+                </div>
+              )}
+
+              {eligibility.unpaidFinesCount > 0 && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 8,
+                  background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <ExclamationCircleOutlined style={{ color: '#fa8c16', fontSize: 18, flexShrink: 0 }} />
+                  <div>
+                    <Text strong style={{ color: '#fa8c16' }}>To'lanmagan jarimalar</Text>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                      {eligibility.unpaidFinesCount} ta jarima · {eligibility.unpaidFinesAmount.toLocaleString()} UZS
+                    </Text>
+                  </div>
+                </div>
+              )}
+
+              <Button block onClick={() => setDeletionModalOpen(false)}>Yopish</Button>
+            </Space>
+          ) : eligibility?.canDelete ? (
+            // Tayyorlik — tasdiqlash
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <Alert
+                type="warning"
+                showIcon
+                message="Diqqat!"
+                description="Hisobingizni o'chirish so'rovi yuboriladi. Admin tasdiqlagan so'ng hisobingiz butunlay o'chiriladi va bu amal qaytarib bo'lmaydi."
+              />
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                So'rovingizni administrator ko'rib chiqadi. Bu 1-3 ish kunini olishi mumkin.
+                O'chirish tasdiqlangunga qadar hisobingiz to'liq faol bo'ladi.
+              </Text>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                <Button onClick={() => setDeletionModalOpen(false)}>Bekor qilish</Button>
+                <Popconfirm
+                  title="So'rovni yubormoqchimisiz?"
+                  description="Admin ko'rib chiqgandan so'ng hisobingiz o'chiriladi."
+                  okText="Ha, yuborish"
+                  cancelText="Yo'q"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={handleRequestDeletion}
+                >
+                  <Button danger type="primary" loading={deletionLoading} icon={<DeleteOutlined />}>
+                    So'rov yuborish
+                  </Button>
+                </Popconfirm>
+              </div>
+            </Space>
+          ) : null}
+        </Spin>
+      </Modal>
     </Spin>
   )
 }

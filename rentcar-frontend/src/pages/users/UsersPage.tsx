@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Input, Avatar, Spin, Pagination, Badge, Grid, theme,
-  Modal, Form, DatePicker, Popconfirm, message, Tooltip,
+  Modal, Form, DatePicker, Popconfirm, message, Tooltip, Alert, Space, Tag,
 } from 'antd'
 import {
   SearchOutlined, CrownFilled, SafetyCertificateFilled,
   TeamOutlined, UserOutlined, ShopFilled, EditOutlined,
   CheckCircleFilled, ClockCircleFilled, AppstoreFilled,
   CalendarFilled, PhoneFilled, StopOutlined, UnlockOutlined,
-  DeleteOutlined, LockOutlined, WarningFilled,
+  DeleteOutlined, LockOutlined, WarningFilled, ExclamationCircleOutlined,
+  CheckCircleOutlined, CloseCircleOutlined,
 } from '@ant-design/icons'
 import { format } from 'date-fns'
 import { usersApi } from '@/api/usersApi'
-import type { UserDto } from '@/types/users'
+import type { UserDto, AccountDeletionRequestDto } from '@/types/users'
 import type { UserRole } from '@/types/auth'
 import type { PaginatedResponse } from '@/types/common'
 import { usePagination } from '@/hooks/usePagination'
@@ -87,6 +88,14 @@ export default function UsersPage() {
   const [hovered,        setHovered]        = useState<number | null>(null)
   const [blockForm] = Form.useForm()
   const { page, pageSize, onChange, reset } = usePagination()
+
+  // ── O'chirish so'rovlari (Admin/SuperAdmin) ───────────────────────────────
+  const [deletionRequests,      setDeletionRequests]      = useState<AccountDeletionRequestDto[]>([])
+  const [deletionReqLoading,    setDeletionReqLoading]    = useState(false)
+  const [deletionActionLoading, setDeletionActionLoading] = useState<number | null>(null)
+  const [rejectModalUserId,     setRejectModalUserId]     = useState<number | null>(null)
+  const [rejectForm]  = Form.useForm()
+  const isAdmin = editorRole === 'Admin' || editorRole === 'SuperAdmin'
   const debouncedSearch = useDebounce(search)
 
   const fetchData = useCallback(async () => {
@@ -149,7 +158,51 @@ export default function UsersPage() {
     }
   }
 
+  const fetchDeletionRequests = useCallback(async () => {
+    if (!isAdmin) return
+    setDeletionReqLoading(true)
+    try {
+      const res = await usersApi.getDeletionRequests()
+      setDeletionRequests(res.data)
+    } catch {
+      // silently fail
+    } finally {
+      setDeletionReqLoading(false)
+    }
+  }, [isAdmin])
+
+  const handleApproveDeletion = async (req: AccountDeletionRequestDto) => {
+    setDeletionActionLoading(req.userId)
+    try {
+      await usersApi.approveDeletion(req.userId)
+      message.success(`${req.userFullName} hisobi o'chirildi`)
+      fetchDeletionRequests()
+      fetchData()
+    } catch (e) {
+      message.error(getApiError(e))
+    } finally {
+      setDeletionActionLoading(null)
+    }
+  }
+
+  const handleRejectDeletion = async (values: { reason: string }) => {
+    if (!rejectModalUserId) return
+    setDeletionActionLoading(rejectModalUserId)
+    try {
+      await usersApi.rejectDeletion(rejectModalUserId, values.reason)
+      message.success("O'chirish so'rovi rad etildi")
+      setRejectModalUserId(null)
+      rejectForm.resetFields()
+      fetchDeletionRequests()
+    } catch (e) {
+      message.error(getApiError(e))
+    } finally {
+      setDeletionActionLoading(null)
+    }
+  }
+
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { fetchDeletionRequests() }, [fetchDeletionRequests])
 
   const items  = data?.items ?? []
   const total  = data?.totalCount ?? 0
@@ -643,12 +696,201 @@ export default function UsersPage() {
         </>
       )}
 
+      {/* ── O'chirish so'rovlari (Admin/SuperAdmin) ────────────────────────── */}
+      {isAdmin && (
+        <div style={{ marginTop: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'rgba(255,77,79,0.1)',
+              border: '1px solid rgba(255,77,79,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <DeleteOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: token.colorText }}>
+                Hisob o'chirish so'rovlari
+                {deletionRequests.length > 0 && (
+                  <Badge count={deletionRequests.length} style={{ marginLeft: 8, background: '#ff4d4f' }} />
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: token.colorTextTertiary }}>
+                Foydalanuvchilarning o'chirish so'rovlari
+              </div>
+            </div>
+            <button
+              onClick={() => fetchDeletionRequests()}
+              disabled={deletionReqLoading}
+              style={{
+                marginLeft: 'auto', padding: '6px 14px', borderRadius: 8,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                background: 'transparent', cursor: 'pointer', fontSize: 12,
+                color: token.colorTextSecondary,
+              }}
+            >
+              {deletionReqLoading ? 'Yuklanmoqda...' : 'Yangilash'}
+            </button>
+          </div>
+
+          {deletionReqLoading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <Spin />
+            </div>
+          ) : deletionRequests.length === 0 ? (
+            <Alert
+              type="info"
+              showIcon
+              message="Kutilayotgan so'rovlar yo'q"
+              description="Hech qanday o'chirish so'rovi mavjud emas."
+            />
+          ) : (
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              {deletionRequests.map(req => (
+                <div
+                  key={req.id}
+                  style={{
+                    background: token.colorBgContainer,
+                    borderRadius: 14,
+                    border: `1.5px solid rgba(255,77,79,0.25)`,
+                    padding: '14px 18px',
+                    display: 'flex',
+                    alignItems: isMobile ? 'flex-start' : 'center',
+                    gap: 14,
+                    flexDirection: isMobile ? 'column' : 'row',
+                  }}
+                >
+                  {/* Avatar */}
+                  <Avatar
+                    size={46}
+                    style={{ background: 'linear-gradient(135deg,#ff4d4f,#f5222d)', flexShrink: 0, fontWeight: 700 }}
+                  >
+                    {req.userFullName.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
+                  </Avatar>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: token.colorText }}>
+                      {req.userFullName}
+                    </div>
+                    <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{req.userEmail}</div>
+                    <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 2 }}>
+                      📅 So'rov: {dayjs(req.requestedAt).format('DD.MM.YYYY HH:mm')}
+                    </div>
+                  </div>
+
+                  <Tag color="orange" style={{ flexShrink: 0 }}>
+                    <ExclamationCircleOutlined style={{ marginRight: 4 }} />
+                    Kutilmoqda
+                  </Tag>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <Popconfirm
+                      title={`${req.userFullName} hisobini o'chirmoqchimisiz?`}
+                      description="Bu amal qaytarib bo'lmaydi."
+                      okText="Ha, tasdiqlash"
+                      cancelText="Bekor"
+                      okButtonProps={{ danger: true }}
+                      onConfirm={() => handleApproveDeletion(req)}
+                    >
+                      <button
+                        disabled={deletionActionLoading === req.userId}
+                        style={{
+                          padding: '7px 14px', borderRadius: 8,
+                          background: 'linear-gradient(135deg,#ff4d4f,#f5222d)',
+                          border: 'none', color: '#fff',
+                          fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          opacity: deletionActionLoading === req.userId ? 0.6 : 1,
+                        }}
+                      >
+                        <CheckCircleOutlined /> Tasdiqlash
+                      </button>
+                    </Popconfirm>
+
+                    <button
+                      onClick={() => { setRejectModalUserId(req.userId); rejectForm.resetFields() }}
+                      style={{
+                        padding: '7px 14px', borderRadius: 8,
+                        background: 'transparent',
+                        border: `1.5px solid ${token.colorBorderSecondary}`,
+                        color: token.colorTextSecondary,
+                        fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                      }}
+                    >
+                      <CloseCircleOutlined /> Rad etish
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </Space>
+          )}
+        </div>
+      )}
+
       <UserRoleModal
         user={roleModalUser}
         editorRole={editorRole!}
         onClose={() => setRoleModalUser(null)}
         onSuccess={() => { setRoleModalUser(null); fetchData() }}
       />
+
+      {/* ── Reject Deletion Modal ────────────────────────────────────────── */}
+      <Modal
+        open={!!rejectModalUserId}
+        onCancel={() => { setRejectModalUserId(null); rejectForm.resetFields() }}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>O'chirish so'rovini rad etish</span>
+          </div>
+        }
+        footer={null}
+        width={420}
+      >
+        <Form form={rejectForm} layout="vertical" onFinish={handleRejectDeletion} style={{ marginTop: 12 }}>
+          <Form.Item
+            name="reason"
+            label={<span style={{ fontWeight: 600 }}>Rad etish sababi <span style={{ color: '#ff4d4f' }}>*</span></span>}
+            rules={[
+              { required: true, message: 'Sabab kiritish majburiy' },
+              { min: 5, message: "Kamida 5 ta belgi kiriting" },
+            ]}
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Nima uchun rad etilmoqda? (to'lanmagan qarzlar, faol ijara...)"
+            />
+          </Form.Item>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => { setRejectModalUserId(null); rejectForm.resetFields() }}
+              style={{
+                padding: '8px 20px', borderRadius: 8,
+                background: 'transparent', border: `1px solid ${token.colorBorderSecondary}`,
+                cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                color: token.colorTextSecondary,
+              }}
+            >
+              Bekor
+            </button>
+            <button
+              type="submit"
+              disabled={!!deletionActionLoading}
+              style={{
+                padding: '8px 24px', borderRadius: 8,
+                background: '#ff4d4f', border: 'none',
+                cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#fff',
+              }}
+            >
+              Rad etish
+            </button>
+          </div>
+        </Form>
+      </Modal>
 
       {/* ── Block Modal ───────────────────────────────────────────────────── */}
       <Modal
