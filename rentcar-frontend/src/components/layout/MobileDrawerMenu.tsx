@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Avatar, Modal, message } from 'antd'
+import { Avatar, Modal, message, Spin, Space } from 'antd'
 import {
   HomeFilled, CarFilled, CalendarFilled, FileTextFilled,
   WarningFilled, BranchesOutlined, TeamOutlined,
@@ -9,12 +9,15 @@ import {
   ToolFilled, CrownFilled, TagsFilled, AppstoreFilled,
   ShopFilled, UnorderedListOutlined, PercentageOutlined,
   SolutionOutlined, GlobalOutlined, EnvironmentOutlined,
-  SafetyCertificateFilled,
+  SafetyCertificateFilled, ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { authApi } from '@/api/authApi'
+import { usersApi } from '@/api/usersApi'
 import type { UserRole } from '@/types/auth'
+import type { DeletionBlockingInfoDto } from '@/types/users'
 
 // ── Role labels ───────────────────────────────────────────────────────────────
 const ROLE_LABELS: Record<string, string> = {
@@ -105,14 +108,38 @@ export default function MobileDrawerMenu({ onClose }: Props) {
     finally { logout(); navigate('/login', { replace: true }) }
   }
 
-  const handleDeleteAccount = () => {
+  const [eligibility,   setEligibility]   = useState<DeletionBlockingInfoDto | null>(null)
+  const [eligLoading,   setEligLoading]   = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteSent,    setDeleteSent]    = useState(false)
+
+  const handleDeleteAccount = async () => {
+    setDeleteSent(false)
+    setEligibility(null)
     setDeleteConfirmOpen(true)
+    setEligLoading(true)
+    try {
+      const res = await usersApi.checkDeletionEligibility()
+      setEligibility(res.data)
+    } catch {
+      message.error('Tekshirishda xatolik')
+      setDeleteConfirmOpen(false)
+    } finally {
+      setEligLoading(false)
+    }
   }
 
   const confirmDelete = async () => {
-    // TODO: backend delete account API
-    message.info("Bu funksiya tez orada qo'shiladi")
-    setDeleteConfirmOpen(false)
+    setDeleteLoading(true)
+    try {
+      await usersApi.requestDeletion()
+      setDeleteSent(true)
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string; detail?: string } } }
+      message.error(e?.response?.data?.message ?? e?.response?.data?.detail ?? 'Xatolik yuz berdi')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const bg     = isDark ? '#141414' : '#001529'
@@ -285,26 +312,74 @@ export default function MobileDrawerMenu({ onClose }: Props) {
       {/* Delete account confirmation modal */}
       <Modal
         open={deleteConfirmOpen}
-        onCancel={() => setDeleteConfirmOpen(false)}
-        onOk={confirmDelete}
-        okText="Ha, o'chirish"
-        cancelText="Bekor"
-        okButtonProps={{ danger: true }}
-        title={
-          <span style={{ color: '#ff4d4f' }}>
-            <DeleteOutlined style={{ marginRight: 8 }} />
-            Hisobni o'chirishni tasdiqlaysizmi?
-          </span>
-        }
+        onCancel={() => { setDeleteConfirmOpen(false); setDeleteSent(false) }}
+        footer={null}
+        title={<span style={{ color: '#ff4d4f' }}><DeleteOutlined style={{ marginRight: 8 }} />Hisobni o'chirish</span>}
         centered
+        width={400}
       >
-        <p style={{ fontSize: 14, lineHeight: 1.7 }}>
-          Bu amalni <strong>qaytarib bo'lmaydi</strong>. Barcha ma'lumotlaringiz
-          (ijaralar, rezervatsiyalar, to'lovlar) o'chiriladi.
-        </p>
-        <p style={{ fontSize: 13, color: '#8c8c8c' }}>
-          Davom etishdan oldin bu qarorni yaxshi o'ylab ko'ring.
-        </p>
+        <Spin spinning={eligLoading}>
+          {deleteSent ? (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 12 }} />
+              <p style={{ fontWeight: 700, fontSize: 15 }}>So'rovingiz yuborildi!</p>
+              <p style={{ color: '#8c8c8c', fontSize: 13 }}>Admin ko'rib chiqadi va xabar beriladi.</p>
+              <button
+                onClick={() => { setDeleteConfirmOpen(false); setDeleteSent(false) }}
+                style={{ marginTop: 12, padding: '8px 24px', borderRadius: 8, background: '#52c41a', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Yopish
+              </button>
+            </div>
+          ) : eligibility && !eligibility.canDelete ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={10}>
+              <p style={{ color: '#ff4d4f', fontWeight: 600 }}>Hisobni o'chirib bo'lmaydi:</p>
+              {eligibility.activeRentalsCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.2)', fontSize: 13 }}>
+                  🚗 <strong>{eligibility.activeRentalsCount} ta</strong> faol/kutilayotgan ijara mavjud
+                </div>
+              )}
+              {eligibility.pendingReservationsCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)', fontSize: 13 }}>
+                  📅 <strong>{eligibility.pendingReservationsCount} ta</strong> kutilayotgan bron mavjud
+                </div>
+              )}
+              {eligibility.unpaidFinesCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)', fontSize: 13 }}>
+                  ⚠️ <strong>{eligibility.unpaidFinesCount} ta</strong> to'lanmagan jarima ({eligibility.unpaidFinesAmount.toLocaleString()} UZS)
+                </div>
+              )}
+              <button
+                onClick={() => setDeleteConfirmOpen(false)}
+                style={{ width: '100%', marginTop: 4, padding: '9px', borderRadius: 8, background: 'transparent', border: '1px solid #d9d9d9', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Yopish
+              </button>
+            </Space>
+          ) : eligibility?.canDelete ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.2)', fontSize: 13, lineHeight: 1.6 }}>
+                <ExclamationCircleOutlined style={{ color: '#ff4d4f', marginRight: 6 }} />
+                So'rov yuborilgach admin ko'rib chiqadi. Tasdiqlangandan keyingina hisob o'chiriladi.
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  style={{ padding: '8px 18px', borderRadius: 8, background: 'transparent', border: '1px solid #d9d9d9', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Bekor
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteLoading}
+                  style={{ padding: '8px 18px', borderRadius: 8, background: '#ff4d4f', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: deleteLoading ? 0.7 : 1 }}
+                >
+                  {deleteLoading ? 'Yuborilmoqda...' : "So'rov yuborish"}
+                </button>
+              </div>
+            </Space>
+          ) : null}
+        </Spin>
       </Modal>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Layout, Menu, Avatar, Modal, message } from 'antd'
+import { Layout, Menu, Avatar, Modal, message, Spin, Space } from 'antd'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   HomeFilled, CarFilled, CalendarFilled,
@@ -9,12 +9,15 @@ import {
   BranchesOutlined, GlobalOutlined, EnvironmentOutlined,
   UnorderedListOutlined, AuditOutlined, PercentageOutlined,
   SolutionOutlined, MessageFilled, BellFilled,
-  LogoutOutlined, DeleteOutlined,
+  LogoutOutlined, DeleteOutlined, ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
 import { authApi } from '@/api/authApi'
+import { usersApi } from '@/api/usersApi'
 import type { UserRole } from '@/types/auth'
+import type { DeletionBlockingInfoDto } from '@/types/users'
 
 const { Sider } = Layout
 
@@ -82,7 +85,11 @@ function CustomerSider({ collapsed }: { collapsed: boolean }) {
   const location  = useLocation()
   const isDark    = useThemeStore((s) => s.isDark)
   const { fullName, role, avatarUrl, logout } = useAuthStore()
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteOpen,      setDeleteOpen]      = useState(false)
+  const [eligibility,     setEligibility]     = useState<DeletionBlockingInfoDto | null>(null)
+  const [eligLoading,     setEligLoading]     = useState(false)
+  const [deleteLoading,   setDeleteLoading]   = useState(false)
+  const [deleteSent,      setDeleteSent]      = useState(false)
 
   const rc = ROLE_COLORS[role ?? 'Customer'] ?? ROLE_COLORS.Customer
   const initials = (fullName ?? 'U').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
@@ -94,6 +101,35 @@ function CustomerSider({ collapsed }: { collapsed: boolean }) {
   const handleLogout = async () => {
     try { await authApi.logout() } catch { /* ignore */ }
     finally { logout(); navigate('/login', { replace: true }) }
+  }
+
+  const handleOpenDelete = async () => {
+    setDeleteSent(false)
+    setEligibility(null)
+    setDeleteOpen(true)
+    setEligLoading(true)
+    try {
+      const res = await usersApi.checkDeletionEligibility()
+      setEligibility(res.data)
+    } catch {
+      message.error('Tekshirishda xatolik')
+      setDeleteOpen(false)
+    } finally {
+      setEligLoading(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    setDeleteLoading(true)
+    try {
+      await usersApi.requestDeletion()
+      setDeleteSent(true)
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string; detail?: string } } }
+      message.error(e?.response?.data?.message ?? e?.response?.data?.detail ?? 'Xatolik yuz berdi')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   const bg     = isDark ? '#141414' : '#001529'
@@ -233,7 +269,7 @@ function CustomerSider({ collapsed }: { collapsed: boolean }) {
         </button>
 
         <button
-          onClick={() => setDeleteOpen(true)}
+          onClick={handleOpenDelete}
           title={collapsed ? "Hisobni o'chirish" : undefined}
           style={{
             display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10,
@@ -252,20 +288,68 @@ function CustomerSider({ collapsed }: { collapsed: boolean }) {
         </button>
       </div>
 
-      {/* Delete confirm modal */}
+      {/* Delete modal */}
       <Modal
         open={deleteOpen}
-        onCancel={() => setDeleteOpen(false)}
-        onOk={() => { message.info("Bu funksiya tez orada qo'shiladi"); setDeleteOpen(false) }}
-        okText="Ha, o'chirish"
-        cancelText="Bekor"
-        okButtonProps={{ danger: true }}
-        title={<span style={{ color: '#ff4d4f' }}><DeleteOutlined style={{ marginRight: 8 }} />Hisobni o'chirishni tasdiqlaysizmi?</span>}
+        onCancel={() => { setDeleteOpen(false); setDeleteSent(false) }}
+        footer={null}
+        title={<span style={{ color: '#ff4d4f' }}><DeleteOutlined style={{ marginRight: 8 }} />Hisobni o'chirish</span>}
         centered
+        width={420}
       >
-        <p style={{ fontSize: 14, lineHeight: 1.7 }}>
-          Bu amalni <strong>qaytarib bo'lmaydi</strong>. Barcha ma'lumotlaringiz o'chiriladi.
-        </p>
+        <Spin spinning={eligLoading}>
+          {deleteSent ? (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 12 }} />
+              <p style={{ fontWeight: 700, fontSize: 15 }}>So'rovingiz yuborildi!</p>
+              <p style={{ color: '#8c8c8c', fontSize: 13 }}>Admin ko'rib chiqadi va xabar beriladi.</p>
+              <button onClick={() => { setDeleteOpen(false); setDeleteSent(false) }}
+                style={{ marginTop: 12, padding: '8px 24px', borderRadius: 8, background: '#52c41a', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                Yopish
+              </button>
+            </div>
+          ) : eligibility && !eligibility.canDelete ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={10}>
+              <p style={{ color: '#ff4d4f', fontWeight: 600 }}>Hisobni o'chirib bo'lmaydi:</p>
+              {eligibility.activeRentalsCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.2)', fontSize: 13 }}>
+                  🚗 <strong>{eligibility.activeRentalsCount} ta</strong> faol/kutilayotgan ijara mavjud
+                </div>
+              )}
+              {eligibility.pendingReservationsCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)', fontSize: 13 }}>
+                  📅 <strong>{eligibility.pendingReservationsCount} ta</strong> kutilayotgan bron mavjud
+                </div>
+              )}
+              {eligibility.unpaidFinesCount > 0 && (
+                <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(250,140,22,0.06)', border: '1px solid rgba(250,140,22,0.2)', fontSize: 13 }}>
+                  ⚠️ <strong>{eligibility.unpaidFinesCount} ta</strong> to'lanmagan jarima ({eligibility.unpaidFinesAmount.toLocaleString()} UZS)
+                </div>
+              )}
+              <button onClick={() => setDeleteOpen(false)}
+                style={{ width: '100%', marginTop: 4, padding: '9px', borderRadius: 8, background: 'transparent', border: '1px solid #d9d9d9', cursor: 'pointer', fontWeight: 600 }}>
+                Yopish
+              </button>
+            </Space>
+          ) : eligibility?.canDelete ? (
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,77,79,0.06)', border: '1px solid rgba(255,77,79,0.2)', fontSize: 13, lineHeight: 1.6 }}>
+                <ExclamationCircleOutlined style={{ color: '#ff4d4f', marginRight: 6 }} />
+                So'rov yuborilgach admin ko'rib chiqadi. Tasdiqlangandan keyingina hisob o'chiriladi.
+              </div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setDeleteOpen(false)}
+                  style={{ padding: '8px 18px', borderRadius: 8, background: 'transparent', border: '1px solid #d9d9d9', cursor: 'pointer', fontWeight: 600 }}>
+                  Bekor
+                </button>
+                <button onClick={handleConfirmDelete} disabled={deleteLoading}
+                  style={{ padding: '8px 18px', borderRadius: 8, background: '#ff4d4f', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', opacity: deleteLoading ? 0.7 : 1 }}>
+                  {deleteLoading ? 'Yuborilmoqda...' : "So'rov yuborish"}
+                </button>
+              </div>
+            </Space>
+          ) : null}
+        </Spin>
       </Modal>
     </div>
   )
