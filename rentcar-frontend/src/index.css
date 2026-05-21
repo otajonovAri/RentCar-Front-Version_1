@@ -12,6 +12,15 @@ body {
   min-height: 100vh;
 }
 
+/* Hide scrollbar on horizontal-scroll containers */
+.activity-tab-bar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.activity-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Mobile responsive base */
 @media (max-width: 767px) {
   .ant-modal-content {
