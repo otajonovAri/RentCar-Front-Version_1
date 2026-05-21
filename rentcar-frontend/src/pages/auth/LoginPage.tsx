@@ -75,7 +75,11 @@ export default function LoginPage() {
       redirect(data)
     } catch (err) {
       const e    = err as AxiosError<ApiError>
-      const detail = e.response?.data?.detail ?? "Email yoki parol noto'g'ri."
+      // Middleware: { errors: { detail: ["msg"] } } yoki { detail: "msg" }
+      const detail =
+        e.response?.data?.errors?.['detail']?.[0] ??
+        e.response?.data?.detail ??
+        "Email yoki parol noto'g'ri."
       if (detail.startsWith('ACCOUNT_DELETED|')) {
         setDeletedRedirect(true)
         setCountdown(5)
@@ -94,7 +98,11 @@ export default function LoginPage() {
         redirect(data)
       } catch (err) {
         const e = err as AxiosError<ApiError>
-        setError(e.response?.data?.detail ?? 'Google orqali kirishda xatolik.')
+        setError(
+          e.response?.data?.errors?.['detail']?.[0] ??
+          e.response?.data?.detail ??
+          'Google orqali kirishda xatolik.'
+        )
       } finally { setGLoading(false) }
     },
     onError: () => setError('Google orqali kirishda xatolik yuz berdi.'),

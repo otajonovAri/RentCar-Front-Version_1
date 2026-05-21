@@ -105,8 +105,10 @@ api.interceptors.response.use(
       }
 
       // Hisob o'chirilgan bo'lsa — /register ga, aks holda /login ga
-      const errDetail = (refreshError as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail ?? ''
+      // Middleware: { errors: { detail: ["msg"] } } yoki { detail: "msg" }
+      type ErrShape = { response?: { data?: { errors?: Record<string, string[]>; detail?: string } } }
+      const errData = (refreshError as ErrShape)?.response?.data
+      const errDetail = errData?.errors?.['detail']?.[0] ?? errData?.detail ?? ''
       if (errDetail.startsWith('ACCOUNT_DELETED|')) {
         window.location.href = '/register?reason=deleted'
       } else {
