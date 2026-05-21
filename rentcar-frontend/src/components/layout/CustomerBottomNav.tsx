@@ -1,8 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Badge, Grid } from 'antd'
+import { Grid } from 'antd'
 import {
   HomeFilled, CarFilled, FileTextFilled,
-  MessageFilled, UserOutlined,
+  HistoryOutlined, UserOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -14,14 +14,9 @@ interface NavItem {
   path:  string
   icon:  (active: boolean) => React.ReactNode
   label: string
-  badge?: number
 }
 
-interface Props {
-  unreadMessages?: number
-}
-
-export default function CustomerBottomNav({ unreadMessages = 0 }: Props) {
+export default function CustomerBottomNav() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const screens   = useBreakpoint()
@@ -51,10 +46,9 @@ export default function CustomerBottomNav({ unreadMessages = 0 }: Props) {
       icon:  (a) => <FileTextFilled style={{ fontSize: 22, color: a ? token.colorPrimary : (isDark ? '#64748b' : '#94a3b8') }} />,
     },
     {
-      path:  '/conversations',
-      label: 'Chat',
-      badge: unreadMessages,
-      icon:  (a) => <MessageFilled style={{ fontSize: 22, color: a ? token.colorPrimary : (isDark ? '#64748b' : '#94a3b8') }} />,
+      path:  '/my-activity',
+      label: 'Tarix',
+      icon:  (a) => <HistoryOutlined style={{ fontSize: 22, color: a ? token.colorPrimary : (isDark ? '#64748b' : '#94a3b8') }} />,
     },
     {
       path:  '/profile',
@@ -119,15 +113,8 @@ export default function CustomerBottomNav({ unreadMessages = 0 }: Props) {
                 }} />
               )}
 
-              {/* Icon with badge */}
-              <Badge
-                count={item.badge ?? 0}
-                size="small"
-                offset={[6, -2]}
-                style={{ fontSize: 10 }}
-              >
-                {item.icon(isActive)}
-              </Badge>
+              {/* Icon */}
+              {item.icon(isActive)}
 
               {/* Label */}
               <span style={{

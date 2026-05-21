@@ -10,7 +10,7 @@ import {
   ShopFilled, UnorderedListOutlined, PercentageOutlined,
   SolutionOutlined, GlobalOutlined, EnvironmentOutlined,
   SafetyCertificateFilled, ExclamationCircleOutlined,
-  CheckCircleOutlined,
+  CheckCircleOutlined, HistoryOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -46,6 +46,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { key: '/reservations',   icon: <CalendarFilled />,          label: 'Rezervatsiyalar',       roles: ['Customer', 'Owner'] },
   { key: '/rentals',        icon: <FileTextFilled />,          label: 'Ijaralar',              roles: ['Customer', 'Owner'] },
   { key: '/fines',          icon: <WarningFilled />,           label: 'Jarimalar',             roles: ['Customer', 'Owner'] },
+  { key: '/my-activity',    icon: <HistoryOutlined />,         label: 'Faoliyat tarixi',       roles: ['Customer', 'Owner'] },
   { key: '/notifications',  icon: <AppstoreFilled />,          label: 'Bildirishnomalar',      roles: ['Customer', 'Owner'] },
   // Admin / Manager items
   { key: '/cars',           icon: <CarFilled />,               label: 'Mashinalar',            roles: ['Manager', 'Admin', 'SuperAdmin'] },

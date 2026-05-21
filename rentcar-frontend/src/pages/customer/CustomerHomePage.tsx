@@ -659,6 +659,109 @@ export default function CustomerHomePage() {
         </div>
       </div>
 
+      {/* ════════════════════════════════════════════════════════════════════
+          FAOLIYAT TARIXI — compact summary
+      ════════════════════════════════════════════════════════════════════ */}
+      <div style={{
+        marginTop:    gap,
+        background:   isDark ? '#1e293b' : '#fff',
+        borderRadius: 20,
+        border:       `1.5px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+        boxShadow:    isDark ? 'none' : '0 2px 12px rgba(0,0,0,0.06)',
+        overflow:     'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          padding:        '16px 20px',
+          borderBottom:   `1px solid ${isDark ? '#334155' : '#f1f5f9'}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              background: 'linear-gradient(135deg,#0891b2,#0e7490)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 15,
+            }}>
+              <ThunderboltFilled />
+            </div>
+            <span style={{ fontWeight: 700, fontSize: 15, color: isDark ? '#f1f5f9' : '#1e293b' }}>
+              Faoliyat tarixi
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/my-activity')}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: '#2563eb', fontSize: 12, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            Batafsil <RightOutlined style={{ fontSize: 10 }} />
+          </button>
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          display:             'grid',
+          gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`,
+          gap:                 1,
+          background:          isDark ? '#334155' : '#f1f5f9',
+        }}>
+          {[
+            { label: 'Jami ijara',   value: rentals.length,          color: '#2563eb', icon: '🚗' },
+            { label: 'Yakunlangan',  value: completedRentals.length, color: '#16a34a', icon: '✅' },
+            { label: 'Bron',         value: reservations.length,     color: '#7c3aed', icon: '📅' },
+            { label: 'Faol bron',    value: activeRes.length,        color: '#ea580c', icon: '⏳' },
+          ].map((s, i) => (
+            <div key={i} style={{
+              background:  isDark ? '#1e293b' : '#fff',
+              padding:     '14px 16px',
+              textAlign:   'center',
+            }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1 }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: 11, color: isDark ? '#64748b' : '#94a3b8', marginTop: 4, fontWeight: 500 }}>
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ padding: '14px 20px' }}>
+          <button
+            onClick={() => navigate('/my-activity')}
+            style={{
+              width:        '100%',
+              padding:      '11px',
+              borderRadius: 12,
+              border:       `1.5px solid ${isDark ? '#0891b2' : '#bae6fd'}`,
+              background:   isDark ? 'rgba(8,145,178,0.12)' : '#f0f9ff',
+              cursor:       'pointer',
+              color:        '#0891b2',
+              fontWeight:   700,
+              fontSize:     13,
+              display:      'flex',
+              alignItems:   'center',
+              justifyContent: 'center',
+              gap:          8,
+              transition:   'all 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(8,145,178,0.2)' : '#e0f2fe')}
+            onMouseLeave={e => (e.currentTarget.style.background = isDark ? 'rgba(8,145,178,0.12)' : '#f0f9ff')}
+          >
+            <ThunderboltFilled />
+            To'liq faoliyat tarixini ko'rish
+            <RightOutlined style={{ fontSize: 11 }} />
+          </button>
+        </div>
+      </div>
+
       {/* ── Drawer ─────────────────────────────────────────────────────── */}
       <RentalDetailDrawer
         rentalId={drawerRentalId}

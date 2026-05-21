@@ -50,7 +50,8 @@ const ResendConfirmationPage = lazy(() => import('@/pages/auth/ResendConfirmatio
 // ── Sahifalar ─────────────────────────────────────────────────────────────────
 const DashboardPage    = lazy(() => import('@/pages/DashboardPage'))
 const ProfilePage      = lazy(() => import('@/pages/ProfilePage'))
-const CustomerHomePage = lazy(() => import('@/pages/customer/CustomerHomePage'))
+const CustomerHomePage  = lazy(() => import('@/pages/customer/CustomerHomePage'))
+const MyActivityPage    = lazy(() => import('@/pages/customer/MyActivityPage'))
 const NotFoundPage     = lazy(() => import('@/pages/NotFoundPage'))
 const ForbiddenPage    = lazy(() => import('@/pages/ForbiddenPage'))
 
@@ -123,6 +124,7 @@ const router = createBrowserRouter([
         children: [
           { path: '/dashboard',     element: <L><DashboardPage /></L> },
           { path: '/my-rentals',    element: <L><CustomerHomePage /></L> },
+          { path: '/my-activity',   element: <L><MyActivityPage /></L> },
           { path: '/profile',       element: <L><ProfilePage /></L> },
 
           // Barcha auth rollar
