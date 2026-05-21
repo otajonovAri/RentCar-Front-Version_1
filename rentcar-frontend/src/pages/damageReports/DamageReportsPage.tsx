@@ -8,14 +8,22 @@ import {
   ExclamationCircleFilled, ClockCircleFilled,
   CheckCircleFilled, CloseCircleFilled, SyncOutlined,
   FileTextOutlined, UserOutlined, CalendarOutlined, DollarCircleFilled,
+  AuditOutlined,
 } from '@ant-design/icons'
 import { damageReportsApi } from '@/api/damageReportsApi'
+import { inspectionsApi } from '@/api/inspectionsApi'
 import type { DamageReportDto, DamageStatus } from '@/types/damageReports'
+import type { InspectionDto } from '@/types/inspections'
 import type { PaginatedResponse } from '@/types/common'
 import { usePagination } from '@/hooks/usePagination'
 import { useAuthStore } from '@/store/authStore'
 import { getApiError } from '@/utils/apiError'
 import { format } from 'date-fns'
+
+const INSPECTION_TYPE_LABEL: Record<string, string> = {
+  PreRental: 'Ijara oldidan', PostRental: 'Ijara keyin',
+  Periodic: 'Muntazam', Damage: 'Zarar',
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString('ru-RU')
@@ -47,10 +55,13 @@ export default function DamageReportsPage() {
   const [data,          setData]          = useState<PaginatedResponse<DamageReportDto> | null>(null)
   const [loading,       setLoading]       = useState(false)
   const [statusFilter,  setStatusFilter]  = useState<DamageStatus | undefined>()
-  const [createOpen,    setCreateOpen]    = useState(false)
-  const [updateRecord,  setUpdateRecord]  = useState<DamageReportDto | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [hovered,       setHovered]       = useState<number | null>(null)
+  const [createOpen,      setCreateOpen]      = useState(false)
+  const [updateRecord,    setUpdateRecord]    = useState<DamageReportDto | null>(null)
+  const [actionLoading,   setActionLoading]   = useState(false)
+  const [hovered,         setHovered]         = useState<number | null>(null)
+  const [inspections,     setInspections]     = useState<InspectionDto[]>([])
+  const [inspLoading,     setInspLoading]     = useState(false)
+  const [inspSearch,      setInspSearch]      = useState('')
   const [createForm] = Form.useForm()
   const [updateForm] = Form.useForm()
   const { page, pageSize, onChange, reset } = usePagination(12)
@@ -66,6 +77,26 @@ export default function DamageReportsPage() {
   }, [page, pageSize, statusFilter])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Ko'riklar — modal ochilganda yuklanadi
+  useEffect(() => {
+    if (!createOpen) return
+    setInspLoading(true)
+    inspectionsApi.getAll({ page: 1, pageSize: 200 })
+      .then(res => setInspections(res.data.items ?? []))
+      .catch(() => message.error("Ko'riklar yuklanmadi"))
+      .finally(() => setInspLoading(false))
+  }, [createOpen])
+
+  const filteredInspections = inspections.filter(i => {
+    const q = inspSearch.toLowerCase()
+    return (
+      String(i.id).includes(q) ||
+      String(i.rentalId).includes(q) ||
+      (INSPECTION_TYPE_LABEL[i.type] ?? i.type).toLowerCase().includes(q) ||
+      (i.inspectedBy ?? '').toLowerCase().includes(q)
+    )
+  })
 
   const handleCreate = async () => {
     const values = await createForm.validateFields()
@@ -498,15 +529,57 @@ export default function DamageReportsPage() {
         cancelButtonProps={{ style: { borderRadius: 8 } }}
         width={isMobile ? '95vw' : 460}
         forceRender
-        afterClose={() => createForm.resetFields()}
+        afterClose={() => { createForm.resetFields(); setInspSearch('') }}
       >
         <Form form={createForm} layout="vertical" style={{ marginTop: 12 }}>
           <Form.Item
             name="inspectionId"
-            label={<span style={{ fontWeight: 600 }}>🔍 Ko'rik ID</span>}
-            rules={[{ required: true, message: 'Majburiy' }]}
+            label={<span style={{ fontWeight: 600 }}>🔍 Texnik ko'rik <span style={{ color: '#ff4d4f' }}>*</span></span>}
+            rules={[{ required: true, message: "Ko'rikni tanlang" }]}
           >
-            <InputNumber min={1} style={{ width: '100%', borderRadius: 8 }} size="large" placeholder="1"/>
+            <Select
+              showSearch
+              placeholder={inspLoading ? 'Yuklanmoqda...' : "Ko'rik raqami yoki ijara bo'yicha qidiring..."}
+              filterOption={false}
+              onSearch={setInspSearch}
+              notFoundContent={
+                inspLoading
+                  ? <div style={{ textAlign: 'center', padding: 12 }}><Spin size="small"/></div>
+                  : <div style={{ textAlign: 'center', padding: '10px 0', color: '#8c8c8c', fontSize: 13 }}>Topilmadi</div>
+              }
+              optionLabelProp="label"
+              size="large"
+            >
+              {filteredInspections.map(i => {
+                const typeLabel = INSPECTION_TYPE_LABEL[i.type] ?? i.type
+                const dateStr   = i.inspectedAt ? format(new Date(i.inspectedAt), 'dd.MM.yy HH:mm') : '—'
+                const label     = `#${i.id} — Ijara #${i.rentalId} | ${typeLabel}`
+                return (
+                  <Select.Option key={i.id} value={i.id} label={label}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        background: 'rgba(207,19,34,0.1)', border: '1px solid rgba(207,19,34,0.25)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 800, color: '#cf1322',
+                      }}>#{i.id}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <AuditOutlined style={{ fontSize: 10, marginRight: 4, opacity: 0.6 }}/>
+                          {typeLabel}
+                          <span style={{ margin: '0 5px', opacity: 0.4 }}>|</span>
+                          Ijara #{i.rentalId}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>
+                          📅 {dateStr}
+                          {i.inspectedBy && <span style={{ marginLeft: 6 }}>· {i.inspectedBy}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </Select.Option>
+                )
+              })}
+            </Select>
           </Form.Item>
           <Form.Item
             name="description"

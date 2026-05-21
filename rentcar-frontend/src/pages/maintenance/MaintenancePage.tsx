@@ -9,7 +9,9 @@ import {
   CarFilled, CalendarOutlined, DollarCircleFilled, SettingOutlined,
 } from '@ant-design/icons'
 import { maintenanceApi } from '@/api/maintenanceApi'
+import { carsApi } from '@/api/carsApi'
 import type { MaintenanceDto, MaintenanceType, MaintenanceStatus } from '@/types/maintenance'
+import type { CarListItemDto } from '@/types/cars'
 import type { PaginatedResponse } from '@/types/common'
 import { usePagination } from '@/hooks/usePagination'
 import { useAuthStore } from '@/store/authStore'
@@ -59,6 +61,9 @@ export default function MaintenancePage() {
   const [completingRecord, setCompletingRecord] = useState<MaintenanceDto | null>(null)
   const [actionLoading,    setActionLoading]    = useState(false)
   const [hovered,          setHovered]          = useState<number | null>(null)
+  const [cars,             setCars]             = useState<CarListItemDto[]>([])
+  const [carsLoading,      setCarsLoading]      = useState(false)
+  const [carSearch,        setCarSearch]        = useState('')
   const [createForm] = Form.useForm()
   const [completeForm] = Form.useForm()
   const { page, pageSize, onChange, reset } = usePagination(12)
@@ -74,6 +79,26 @@ export default function MaintenancePage() {
   }, [page, pageSize, statusFilter, typeFilter])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Mashinalar — modal ochilganda yuklanadi
+  useEffect(() => {
+    if (!createOpen) return
+    setCarsLoading(true)
+    carsApi.getAll({ page: 1, pageSize: 300 })
+      .then(res => setCars(res.data.items ?? []))
+      .catch(() => message.error('Mashinalar yuklanmadi'))
+      .finally(() => setCarsLoading(false))
+  }, [createOpen])
+
+  const filteredCars = cars.filter(c => {
+    const q = carSearch.toLowerCase()
+    return (
+      c.licensePlate?.toLowerCase().includes(q) ||
+      c.brand?.toLowerCase().includes(q) ||
+      c.model?.toLowerCase().includes(q) ||
+      String(c.id).includes(q)
+    )
+  })
 
   const handleCreate = async () => {
     const values = await createForm.validateFields()
@@ -534,15 +559,68 @@ export default function MaintenancePage() {
         cancelButtonProps={{ style: { borderRadius: 8 } }}
         width={isMobile ? '95vw' : 480}
         forceRender
-        afterClose={() => createForm.resetFields()}
+        afterClose={() => { createForm.resetFields(); setCarSearch('') }}
       >
         <Form form={createForm} layout="vertical" style={{ marginTop: 12 }}>
           <Form.Item
             name="carId"
-            label={<span style={{ fontWeight: 600 }}>🚗 Mashina ID</span>}
-            rules={[{ required: true, message: 'Majburiy' }]}
+            label={<span style={{ fontWeight: 600 }}>🚗 Mashina <span style={{ color: '#ff4d4f' }}>*</span></span>}
+            rules={[{ required: true, message: 'Mashinani tanlang' }]}
           >
-            <InputNumber min={1} style={{ width: '100%', borderRadius: 8 }} size="large" placeholder="1"/>
+            <Select
+              showSearch
+              placeholder={carsLoading ? 'Yuklanmoqda...' : 'Davlat raqami, marka yoki model...'}
+              filterOption={false}
+              onSearch={setCarSearch}
+              notFoundContent={
+                carsLoading
+                  ? <div style={{ textAlign: 'center', padding: 12 }}><Spin size="small"/></div>
+                  : <div style={{ textAlign: 'center', padding: '10px 0', color: '#8c8c8c', fontSize: 13 }}>Topilmadi</div>
+              }
+              optionLabelProp="label"
+              size="large"
+            >
+              {filteredCars.map(c => {
+                const statusColor: Record<string, string> = {
+                  Available: '#52c41a', Rented: '#1677ff',
+                  Maintenance: '#fa8c16', Reserved: '#722ed1', Inactive: '#8c8c8c',
+                }
+                const statusLabel: Record<string, string> = {
+                  Available: 'Bo\'sh', Rented: 'Ijarada',
+                  Maintenance: 'Ta\'mirda', Reserved: 'Bron', Inactive: 'Nofaol',
+                }
+                const sc = statusColor[c.status] ?? '#8c8c8c'
+                const sl = statusLabel[c.status] ?? c.status
+                const label = `${c.brand} ${c.model} — ${c.licensePlate}`
+                return (
+                  <Select.Option key={c.id} value={c.id} label={label}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '2px 0' }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                        background: `${sc}18`, border: `1.5px solid ${sc}40`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <CarFilled style={{ color: sc, fontSize: 14 }}/>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.brand} {c.model}
+                          <span style={{ marginLeft: 6, fontFamily: 'monospace', fontSize: 12, fontWeight: 800, color: '#d46b08' }}>
+                            {c.licensePlate}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#8c8c8c', display: 'flex', alignItems: 'center', gap: 6, marginTop: 1 }}>
+                          {c.year} y. · {c.categoryName}
+                          <span style={{ padding: '1px 6px', borderRadius: 10, background: `${sc}18`, color: sc, fontWeight: 700, fontSize: 10 }}>
+                            {sl}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Select.Option>
+                )
+              })}
+            </Select>
           </Form.Item>
           <Form.Item
             name="title"

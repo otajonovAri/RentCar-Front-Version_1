@@ -11,7 +11,9 @@ import {
   TagOutlined,
 } from '@ant-design/icons'
 import { insuranceApi } from '@/api/insuranceApi'
+import { carsApi } from '@/api/carsApi'
 import type { InsuranceCompanyDto, InsurancePolicyDto } from '@/types/insurance'
+import type { CarListItemDto } from '@/types/cars'
 import { getApiError } from '@/utils/apiError'
 import { format, isAfter } from 'date-fns'
 
@@ -57,6 +59,9 @@ export default function InsurancePage() {
   const [companyModalOpen, setCompanyModalOpen] = useState(false)
   const [policyModalOpen,  setPolicyModalOpen]  = useState(false)
   const [actionLoading,    setActionLoading]    = useState(false)
+  const [cars,             setCars]             = useState<CarListItemDto[]>([])
+  const [carsLoading,      setCarsLoading]      = useState(false)
+  const [carSearch,        setCarSearch]        = useState('')
   const [companyForm] = Form.useForm()
   const [policyForm]  = Form.useForm()
 
@@ -75,6 +80,26 @@ export default function InsurancePage() {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Mashinalar — polisi modal ochilganda yuklanadi
+  useEffect(() => {
+    if (!policyModalOpen) return
+    setCarsLoading(true)
+    carsApi.getAll({ page: 1, pageSize: 300 })
+      .then(res => setCars(res.data.items ?? []))
+      .catch(() => message.error('Mashinalar yuklanmadi'))
+      .finally(() => setCarsLoading(false))
+  }, [policyModalOpen])
+
+  const filteredCars = cars.filter(c => {
+    const q = carSearch.toLowerCase()
+    return (
+      c.licensePlate?.toLowerCase().includes(q) ||
+      c.brand?.toLowerCase().includes(q) ||
+      c.model?.toLowerCase().includes(q) ||
+      String(c.id).includes(q)
+    )
+  })
 
   const handleCreateCompany = async () => {
     const values = await companyForm.validateFields()
@@ -406,29 +431,83 @@ export default function InsurancePage() {
         cancelButtonProps={{ style: { borderRadius: 8 } }}
         width={isMobile ? '95vw' : 560}
         forceRender
-        afterClose={() => policyForm.resetFields()}
+        afterClose={() => { policyForm.resetFields(); setCarSearch('') }}
       >
         <Form form={policyForm} layout="vertical" style={{ marginTop: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
-            <Form.Item
-              name="carId"
-              label={<span style={{ fontWeight: 600 }}>🚗 Mashina ID</span>}
-              rules={[{ required: true, message: 'Majburiy' }]}
+          {/* Mashina dropdown */}
+          <Form.Item
+            name="carId"
+            label={<span style={{ fontWeight: 600 }}>🚗 Mashina <span style={{ color: '#ff4d4f' }}>*</span></span>}
+            rules={[{ required: true, message: 'Mashinani tanlang' }]}
+          >
+            <Select
+              showSearch
+              placeholder={carsLoading ? 'Yuklanmoqda...' : 'Davlat raqami, marka yoki model...'}
+              filterOption={false}
+              onSearch={setCarSearch}
+              notFoundContent={
+                carsLoading
+                  ? <div style={{ textAlign:'center', padding:12 }}><Spin size="small"/></div>
+                  : <div style={{ textAlign:'center', padding:'10px 0', color:'#8c8c8c', fontSize:13 }}>Topilmadi</div>
+              }
+              optionLabelProp="label"
+              size="large"
             >
-              <InputNumber style={{ width: '100%', borderRadius: 8 }} min={1} size="large"/>
-            </Form.Item>
-            <Form.Item
-              name="insuranceCompanyId"
-              label={<span style={{ fontWeight: 600 }}>🏦 Kompaniya</span>}
-              rules={[{ required: true, message: 'Majburiy' }]}
-            >
-              <Select placeholder="Kompaniya tanlang..." size="large" style={{ borderRadius: 8 }}>
-                {companies.map(c => (
-                  <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </div>
+              {filteredCars.map(c => {
+                const statusColor: Record<string, string> = {
+                  Available: '#52c41a', Rented: '#1677ff',
+                  Maintenance: '#fa8c16', Reserved: '#722ed1', Inactive: '#8c8c8c',
+                }
+                const statusLabel: Record<string, string> = {
+                  Available: "Bo'sh", Rented: 'Ijarada',
+                  Maintenance: "Ta'mirda", Reserved: 'Bron', Inactive: 'Nofaol',
+                }
+                const sc = statusColor[c.status] ?? '#8c8c8c'
+                const sl = statusLabel[c.status] ?? c.status
+                const label = `${c.brand} ${c.model} — ${c.licensePlate}`
+                return (
+                  <Select.Option key={c.id} value={c.id} label={label}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'2px 0' }}>
+                      <div style={{
+                        width:36, height:36, borderRadius:8, flexShrink:0,
+                        background:`${sc}18`, border:`1.5px solid ${sc}40`,
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                      }}>
+                        <span style={{ fontSize:14 }}>🚗</span>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {c.brand} {c.model}
+                          <span style={{ marginLeft:6, fontFamily:'monospace', fontSize:12, fontWeight:800, color:'#0958d9' }}>
+                            {c.licensePlate}
+                          </span>
+                        </div>
+                        <div style={{ fontSize:11, color:'#8c8c8c', display:'flex', alignItems:'center', gap:6, marginTop:1 }}>
+                          {c.year} y. · {c.categoryName}
+                          <span style={{ padding:'1px 6px', borderRadius:10, background:`${sc}18`, color:sc, fontWeight:700, fontSize:10 }}>
+                            {sl}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Select.Option>
+                )
+              })}
+            </Select>
+          </Form.Item>
+
+          {/* Kompaniya */}
+          <Form.Item
+            name="insuranceCompanyId"
+            label={<span style={{ fontWeight: 600 }}>🏦 Kompaniya <span style={{ color: '#ff4d4f' }}>*</span></span>}
+            rules={[{ required: true, message: 'Majburiy' }]}
+          >
+            <Select placeholder="Kompaniya tanlang..." size="large" style={{ borderRadius: 8 }}>
+              {companies.map(c => (
+                <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Form.Item

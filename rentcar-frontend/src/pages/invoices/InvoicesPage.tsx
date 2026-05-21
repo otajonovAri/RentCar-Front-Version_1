@@ -1,13 +1,23 @@
-import { useState } from 'react'
-import { Button, Input, theme, Grid, Spin, message } from 'antd'
+import { useState, useEffect } from 'react'
+import { Button, Select, Input, theme, Grid, Spin, message } from 'antd'
 import {
-  FileTextFilled, SearchOutlined, PlusOutlined,
+  FileTextFilled, PlusOutlined,
   CalendarFilled, DollarCircleFilled, CheckCircleFilled,
   ClockCircleFilled, StopOutlined, EditOutlined,
+  CarFilled, UserOutlined,
 } from '@ant-design/icons'
 import { invoicesApi } from '@/api/invoicesApi'
+import { rentalsApi } from '@/api/rentalsApi'
 import type { InvoiceDto, InvoiceStatus } from '@/types/invoices'
+import type { RentalDto } from '@/types/rentals'
 import { format } from 'date-fns'
+
+const STATUS_COLOR: Record<string, string> = {
+  Active: '#52c41a', Pending: '#fa8c16', Completed: '#722ed1', Cancelled: '#ff4d4f',
+}
+const STATUS_LABEL: Record<string, string> = {
+  Active: 'Faol', Pending: 'Kutilmoqda', Completed: 'Yakunlangan', Cancelled: 'Bekor',
+}
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
 
@@ -24,7 +34,9 @@ export default function InvoicesPage() {
   const screens   = Grid.useBreakpoint()
   const isMobile  = !screens.md
 
-  const [rentalIdInput,  setRentalIdInput]  = useState('')
+  const [rentals,        setRentals]        = useState<RentalDto[]>([])
+  const [rentalsLoading, setRentalsLoading] = useState(false)
+  const [rentalSearch,   setRentalSearch]   = useState('')
   const [searchedId,     setSearchedId]     = useState<number | null>(null)
   const [invoice,        setInvoice]        = useState<InvoiceDto | null>(null)
   const [loading,        setLoading]        = useState(false)
@@ -33,15 +45,33 @@ export default function InvoicesPage() {
   const [taxPercent,     setTaxPercent]     = useState('12')
   const [notes,          setNotes]          = useState('')
 
-  const handleSearch = async () => {
-    const id = parseInt(rentalIdInput, 10)
-    if (!id || id < 1) return
+  // Ijaralar ro'yxatini komponent yuklananda olish
+  useEffect(() => {
+    setRentalsLoading(true)
+    rentalsApi.getAll({ page: 1, pageSize: 300 })
+      .then(res => setRentals(res.data.items ?? []))
+      .catch(() => message.error('Ijaralar yuklanmadi'))
+      .finally(() => setRentalsLoading(false))
+  }, [])
+
+  const filteredRentals = rentals.filter(r => {
+    const q = rentalSearch.toLowerCase()
+    return (
+      String(r.id).includes(q) ||
+      r.customerName?.toLowerCase().includes(q) ||
+      r.carBrand?.toLowerCase().includes(q) ||
+      r.carModel?.toLowerCase().includes(q) ||
+      r.licensePlate?.toLowerCase().includes(q)
+    )
+  })
+
+  const handleSelectRental = async (rentalId: number) => {
+    setSearchedId(rentalId)
     setLoading(true)
     setNotFound(false)
     setInvoice(null)
-    setSearchedId(id)
     try {
-      const res = await invoicesApi.getByRental(id)
+      const res = await invoicesApi.getByRental(rentalId)
       setInvoice(res.data)
     } catch {
       setNotFound(true)
@@ -120,7 +150,7 @@ export default function InvoicesPage() {
             </div>
           </div>
 
-          {/* ── Search bar ── */}
+          {/* ── Rental dropdown ── */}
           <div style={{
             background:   'rgba(255,255,255,0.12)',
             backdropFilter: 'blur(10px)',
@@ -129,41 +159,64 @@ export default function InvoicesPage() {
             padding:      '16px 18px',
           }}>
             <div style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.8)', marginBottom:10 }}>
-              🔍 Ijara raqami bo'yicha qidirish
+              🔍 Ijara tanlang
             </div>
             <div style={{ display:'flex', gap:10, flexDirection: isMobile ? 'column' : 'row' }}>
-              <Input
-                placeholder="Masalan: 42"
-                value={rentalIdInput}
-                onChange={e => setRentalIdInput(e.target.value.replace(/\D/g,''))}
-                onPressEnter={handleSearch}
-                prefix={<span style={{ color:'rgba(255,255,255,0.5)', fontWeight:700, fontSize:13 }}>#</span>}
+              <Select
+                showSearch
+                placeholder={rentalsLoading ? 'Yuklanmoqda...' : 'Ijara raqami, mijoz yoki mashina...'}
+                filterOption={false}
+                onSearch={setRentalSearch}
+                onChange={(val: number) => handleSelectRental(val)}
+                loading={rentalsLoading}
+                notFoundContent={
+                  rentalsLoading
+                    ? <div style={{ textAlign:'center', padding:12 }}><Spin size="small"/></div>
+                    : <div style={{ textAlign:'center', padding:'10px 0', color:'#8c8c8c', fontSize:13 }}>Topilmadi</div>
+                }
+                optionLabelProp="label"
                 size="large"
-                style={{
-                  flex:1,
-                  background:'rgba(255,255,255,0.15)',
-                  border:'1px solid rgba(255,255,255,0.2)',
-                  borderRadius:10, color:'#fff',
-                  fontSize:16, fontWeight:600,
-                }}
-                styles={{ input: { background:'transparent', color:'#fff' } }}
-              />
-              <Button
-                size="large"
-                icon={<SearchOutlined/>}
-                loading={loading}
-                onClick={handleSearch}
-                disabled={!rentalIdInput}
-                style={{
-                  background:'rgba(255,255,255,0.25)',
-                  border:'1px solid rgba(255,255,255,0.4)',
-                  color:'#fff', borderRadius:10, fontWeight:700,
-                  minWidth: isMobile ? '100%' : 140,
-                }}
+                style={{ flex:1, minWidth:0 }}
+                dropdownStyle={{ maxHeight:320 }}
               >
-                Qidirish
-              </Button>
+                {filteredRentals.map(r => {
+                  const sc = STATUS_COLOR[r.status] ?? '#8c8c8c'
+                  const sl = STATUS_LABEL[r.status] ?? r.status
+                  const s  = r.startDate ? format(new Date(r.startDate), 'dd.MM.yy') : '—'
+                  const e  = r.endDate   ? format(new Date(r.endDate),   'dd.MM.yy') : '—'
+                  const label = `#${r.id} — ${r.customerName} | ${r.carBrand} ${r.carModel}`
+                  return (
+                    <Select.Option key={r.id} value={r.id} label={label}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'2px 0' }}>
+                        <div style={{
+                          width:32, height:32, borderRadius:8, flexShrink:0,
+                          background:`${sc}18`, border:`1.5px solid ${sc}40`,
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                          fontSize:11, fontWeight:800, color:sc,
+                        }}>#{r.id}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            <UserOutlined style={{ fontSize:10, marginRight:4, opacity:.6 }}/>{r.customerName}
+                            <span style={{ margin:'0 5px', opacity:.4 }}>|</span>
+                            <CarFilled style={{ fontSize:10, marginRight:4, opacity:.6 }}/>{r.carBrand} {r.carModel}
+                          </div>
+                          <div style={{ fontSize:11, color:'#8c8c8c', display:'flex', alignItems:'center', gap:5, marginTop:1 }}>
+                            📅 {s} → {e}
+                            <span style={{ padding:'1px 6px', borderRadius:10, background:`${sc}18`, color:sc, fontWeight:700, fontSize:10 }}>{sl}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Select.Option>
+                  )
+                })}
+              </Select>
             </div>
+            {loading && (
+              <div style={{ textAlign:'center', marginTop:10 }}>
+                <Spin size="small"/>
+                <span style={{ marginLeft:8, color:'rgba(255,255,255,0.7)', fontSize:12 }}>Yuklanmoqda...</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
