@@ -33,6 +33,11 @@ export interface UpdateProfileDto {
   avatarUrl?: string | null
 }
 
+export interface ChangePasswordDto {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface UpdateLicenseDto {
   licenseNumber: string
   licenseExpirationDate: string
