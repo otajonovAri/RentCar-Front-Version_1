@@ -1,7 +1,6 @@
 import api from './axiosInstance'
 import type {
-  UserDto, UpdateProfileDto, UpdateLicenseDto, ChangePasswordDto,
-  UpdateRoleDto, BlockUserDto, UsersFilter,
+  UserDto, UpdateProfileDto, UpdateLicenseDto, UpdateRoleDto, BlockUserDto, UsersFilter,
   DeletionBlockingInfoDto, AccountDeletionRequestDto, UserFullHistoryDto
 } from '@/types/users'
 import type { PaginatedResponse } from '@/types/common'
@@ -18,9 +17,6 @@ export const usersApi = {
 
   updateLicense: (userId: number, data: UpdateLicenseDto) =>
     api.put<void>(`/api/users/${userId}/license`, data),
-
-  changePassword: (userId: number, data: ChangePasswordDto) =>
-    api.put<void>(`/api/users/${userId}/password`, data),
 
   updateRole: (userId: number, data: UpdateRoleDto) =>
     api.patch<void>(`/api/users/${userId}/role`, data),

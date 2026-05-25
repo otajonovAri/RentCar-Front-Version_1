@@ -12,7 +12,6 @@ import {
   CalendarOutlined, LoadingOutlined, StopOutlined, WarningFilled,
   DeleteOutlined, HistoryOutlined, ExclamationCircleOutlined,
   CarOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleFilled,
-  LockOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import dayjs from 'dayjs'
@@ -20,7 +19,6 @@ import { useAuthStore } from '@/store/authStore'
 import { usersApi } from '@/api/usersApi'
 import { authApi } from '@/api/authApi'
 import { uploadImage } from '@/api/uploadApi'
-import { getApiError } from '@/utils/apiError'
 import type {
   UserDto, UpdateProfileDto, UpdateLicenseDto,
   DeletionBlockingInfoDto, UserFullHistoryDto,
@@ -61,7 +59,6 @@ export default function ProfilePage() {
   const isMobile  = !screens.md
   const [form] = Form.useForm()
   const [licenseForm] = Form.useForm()
-  const [passwordForm] = Form.useForm()
 
   const [profile, setProfile]               = useState<UserDto | null>(null)
   const [loading, setLoading]               = useState(true)
@@ -71,7 +68,6 @@ export default function ProfilePage() {
   const [licenseSaving, setLicenseSaving]   = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [licenseImgUploading, setLicenseImgUploading] = useState(false)
-  const [passwordSaving, setPasswordSaving] = useState(false)
 
   // ── Hisob o'chirish holati ────────────────────────────────────────────────
   const [deletionModalOpen, setDeletionModalOpen]   = useState(false)
@@ -205,25 +201,6 @@ export default function ProfilePage() {
       message.error('Guvohnomani yangilashda xatolik')
     } finally {
       setLicenseSaving(false)
-    }
-  }
-
-  // ── Parol o'zgartirish ────────────────────────────────────────────────────
-  const handleChangePassword = async () => {
-    const values = await passwordForm.validateFields()
-    if (!userId) return
-    setPasswordSaving(true)
-    try {
-      await usersApi.changePassword(userId, {
-        currentPassword: values.currentPassword,
-        newPassword:     values.newPassword,
-      })
-      message.success("✅ Parol muvaffaqiyatli o'zgartirildi!")
-      passwordForm.resetFields()
-    } catch (err) {
-      message.error(getApiError(err, "Parolni o'zgartirishda xatolik"))
-    } finally {
-      setPasswordSaving(false)
     }
   }
 
@@ -444,89 +421,6 @@ export default function ProfilePage() {
         </div>
       )}
     </Form>
-  )
-
-  // ── Parol o'zgartirish tab ────────────────────────────────────────────────
-  const passwordTab = (
-    <div style={{ maxWidth: 460 }}>
-      <div style={{
-        padding: '14px 16px', borderRadius: 12, marginBottom: 24,
-        background: 'linear-gradient(135deg,rgba(22,119,255,0.07),rgba(99,102,241,0.07))',
-        border: '1px solid rgba(22,119,255,0.15)',
-        display: 'flex', alignItems: 'flex-start', gap: 10,
-      }}>
-        <LockOutlined style={{ color: '#1677ff', fontSize: 16, marginTop: 2, flexShrink: 0 }} />
-        <Text style={{ fontSize: 13, color: themeToken.colorTextSecondary, lineHeight: 1.6 }}>
-          Xavfsizlik uchun kuchli parol ishlating: kamida 8 ta belgi, katta-kichik harflar va raqamlar.
-        </Text>
-      </div>
-
-      <Form form={passwordForm} layout="vertical">
-        <Form.Item
-          name="currentPassword"
-          label="Joriy parol"
-          rules={[
-            { required: true, message: 'Joriy parolni kiriting' },
-            { min: 6, message: 'Kamida 6 ta belgi bo\'lishi kerak' },
-          ]}
-        >
-          <Input.Password size="large" placeholder="Joriy parolingiz" />
-        </Form.Item>
-
-        <Form.Item
-          name="newPassword"
-          label="Yangi parol"
-          rules={[
-            { required: true, message: 'Yangi parolni kiriting' },
-            { min: 6, message: 'Kamida 6 ta belgi bo\'lishi kerak' },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue('currentPassword') !== value) {
-                  return Promise.resolve()
-                }
-                return Promise.reject(new Error("Yangi parol joriy parol bilan bir xil bo'lmasin"))
-              },
-            }),
-          ]}
-        >
-          <Input.Password size="large" placeholder="Yangi parol" />
-        </Form.Item>
-
-        <Form.Item
-          name="confirmPassword"
-          label="Yangi parolni tasdiqlang"
-          dependencies={['newPassword']}
-          rules={[
-            { required: true, message: 'Parolni tasdiqlang' },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue('newPassword') === value) {
-                  return Promise.resolve()
-                }
-                return Promise.reject(new Error('Parollar mos kelmadi!'))
-              },
-            }),
-          ]}
-        >
-          <Input.Password size="large" placeholder="Parolni qayta kiriting" />
-        </Form.Item>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-          <Button icon={<CloseOutlined />} onClick={() => passwordForm.resetFields()}>
-            Tozalash
-          </Button>
-          <Button
-            type="primary"
-            icon={<LockOutlined />}
-            loading={passwordSaving}
-            onClick={handleChangePassword}
-            size="large"
-          >
-            Parolni o'zgartirish
-          </Button>
-        </div>
-      </Form>
-    </div>
   )
 
   // ── To'liq tarix tab ─────────────────────────────────────────────────────
@@ -856,30 +750,6 @@ export default function ProfilePage() {
               </Card>
             </Col>
 
-            {/* ── Xavfsizlik (parol) kartasi (mobile) ── */}
-            <Col xs={24}>
-              <Card
-                style={{ background: cardBg }}
-                styles={{ body: { padding: '16px' } }}
-              >
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-                }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8,
-                    background: 'rgba(114,46,209,0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <LockOutlined style={{ fontSize: 15, color: '#722ed1' }} />
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: themeToken.colorText }}>
-                    Xavfsizlik
-                  </span>
-                </div>
-                {passwordTab}
-              </Card>
-            </Col>
-
             {/* ── Tarix kartasi (mobile) ── */}
             <Col xs={24}>
               <Card
@@ -955,13 +825,6 @@ export default function ProfilePage() {
                         {licenseTab}
                       </>
                     ),
-                  },
-                  {
-                    key: 'password',
-                    label: (
-                      <span><LockOutlined style={{ marginRight: 6 }} />Xavfsizlik</span>
-                    ),
-                    children: passwordTab,
                   },
                   {
                     key: 'history',
