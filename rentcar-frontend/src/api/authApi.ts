@@ -29,9 +29,12 @@ export const authApi = {
   login: (data: LoginDto) =>
     api.post<AuthResponseDto>('/api/auth/login', data),
 
-  /** Google Sign-In — id token backend ga yuboriladi */
-  googleLogin: (idToken: string) =>
-    api.post<AuthResponseDto>('/api/auth/google', { idToken }),
+  /**
+   * Google Sign-In — useGoogleLogin() dan kelgan access_token backend ga yuboriladi.
+   * Backend uni Google UserInfo endpoint ga yuborib, foydalanuvchi ma'lumotlarini oladi.
+   */
+  googleLogin: (accessToken: string) =>
+    api.post<AuthResponseDto>('/api/auth/google', { accessToken }),
 
   refreshToken: (data: RefreshTokenDto) =>
     api.post<AuthResponseDto>('/api/auth/refresh-token', data),

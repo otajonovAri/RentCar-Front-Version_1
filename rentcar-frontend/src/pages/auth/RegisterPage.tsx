@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Input, Button, Typography, Alert, Row, Col, DatePicker } from 'antd'
+import { Input, Button, Typography, Alert, Row, Col, DatePicker, Divider } from 'antd'
 import {
   MailOutlined, LockOutlined, UserOutlined, PhoneOutlined,
 } from '@ant-design/icons'
+import { useGoogleLogin } from '@react-oauth/google'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,7 +12,7 @@ import type { Dayjs } from 'dayjs'
 import { authApi } from '@/api/authApi'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
-import type { ApiError } from '@/types/auth'
+import type { ApiError, AuthResponseDto } from '@/types/auth'
 import { AxiosError } from 'axios'
 
 const { Title, Text } = Typography
@@ -41,6 +42,7 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
   const [loading,     setLoading]     = useState(false)
+  const [gLoading,    setGLoading]    = useState(false)
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(schema),
@@ -49,6 +51,40 @@ export default function RegisterPage() {
       phoneNumber: '+998', dateOfBirth: '',
       password: '', confirmPassword: '',
     },
+  })
+
+  const redirectAfterAuth = (data: AuthResponseDto) => {
+    setAuth({
+      accessToken:  data.accessToken,
+      refreshToken: data.refreshToken,
+      userId:       data.userId,
+      fullName:     data.fullName,
+      email:        data.email,
+      role:         data.role,
+      avatarUrl:    data.avatarUrl ?? null,
+    })
+    navigate(
+      data.role === 'Customer' || data.role === 'Owner' ? '/my-rentals' : '/dashboard',
+      { replace: true },
+    )
+  }
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setServerError(null); setFieldErrors({}); setGLoading(true)
+      try {
+        const { data } = await authApi.googleLogin(tokenResponse.access_token)
+        redirectAfterAuth(data)
+      } catch (err) {
+        const e = err as AxiosError<ApiError>
+        setServerError(
+          e.response?.data?.errors?.['detail']?.[0] ??
+          e.response?.data?.detail ??
+          'Google orqali kirishda xatolik.'
+        )
+      } finally { setGLoading(false) }
+    },
+    onError: () => setServerError('Google orqali kirishda xatolik yuz berdi.'),
   })
 
   const onSubmit = async (v: RegisterForm) => {
@@ -64,19 +100,17 @@ export default function RegisterPage() {
       })
 
       if (!data.emailVerificationRequired && data.accessToken) {
-        // Email service ishlamagan — avtomatik login
-        setAuth({
-          accessToken:  data.accessToken,
-          refreshToken: data.refreshToken!,
-          userId:       data.userId!,
-          fullName:     data.fullName!,
-          email:        data.email,
-          role:         data.role!,
+        // Email service ishlamagan holda backend avtomatik login ma'lumotlarini bersa
+        redirectAfterAuth({
+          accessToken:       data.accessToken,
+          refreshToken:      data.refreshToken!,
+          userId:            data.userId!,
+          fullName:          data.fullName!,
+          email:             data.email,
+          role:              data.role!,
+          accessTokenExpiry: '',
+          avatarUrl:         null,
         })
-        navigate(
-          data.role === 'Customer' || data.role === 'Owner' ? '/my-rentals' : '/dashboard',
-          { replace: true },
-        )
       } else {
         // OTP tasdiqlash sahifasiga yo'naltirish
         const params = new URLSearchParams({ email: data.email })
@@ -139,6 +173,40 @@ export default function RegisterPage() {
         <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: 24, fontSize: 13 }}>
           Ro'yxatdan o'ting va darhol foydalaning
         </Text>
+
+        {/* Google tugmasi */}
+        <Button
+          size="large"
+          block
+          loading={gLoading}
+          onClick={() => googleLogin()}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            height: 44, borderRadius: 8,
+            border:      isDark ? '1.5px solid #333' : '1.5px solid #e0e0e0',
+            background:  isDark ? '#1f1f1f' : '#ffffff',
+            fontWeight:  500, fontSize: 14,
+            color:       isDark ? '#e0e0e0' : '#333333',
+            boxShadow:   isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+            marginBottom: 16,
+          }}
+          icon={
+            !gLoading && (
+              <svg width="18" height="18" viewBox="0 0 18 18" style={{ flexShrink: 0 }}>
+                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+              </svg>
+            )
+          }
+        >
+          Google bilan ro'yxatdan o'tish
+        </Button>
+
+        <Divider style={{ margin: '0 0 16px' }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>yoki email bilan</Text>
+        </Divider>
 
         {serverError && (
           <Alert

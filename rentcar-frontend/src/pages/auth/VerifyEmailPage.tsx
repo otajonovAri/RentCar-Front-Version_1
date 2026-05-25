@@ -19,12 +19,13 @@ export default function VerifyEmailPage() {
   const setAuth      = useAuthStore((s) => s.setAuth)
   const isDark       = useThemeStore((s) => s.isDark)
 
-  const [otp,       setOtp]       = useState(['', '', '', '', '', ''])
-  const [error,     setError]     = useState<string | null>(null)
-  const [loading,   setLoading]   = useState(false)
-  const [resending, setResending] = useState(false)
-  const [resendMsg, setResendMsg] = useState<string | null>(null)
-  const [countdown, setCountdown] = useState(60)
+  const [otp,            setOtp]           = useState(['', '', '', '', '', ''])
+  const [error,          setError]         = useState<string | null>(null)
+  const [alreadyConfirmed, setAlreadyConfirmed] = useState(false)
+  const [loading,        setLoading]       = useState(false)
+  const [resending,      setResending]     = useState(false)
+  const [resendMsg,      setResendMsg]     = useState<string | null>(null)
+  const [countdown,      setCountdown]     = useState(60)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Countdown
@@ -68,9 +69,19 @@ export default function VerifyEmailPage() {
       redirect(data)
     } catch (err) {
       const e = err as AxiosError<ApiError>
-      setError(e.response?.data?.detail ?? "Kod noto'g'ri yoki muddati tugagan.")
-      setOtp(['', '', '', '', '', ''])
-      inputRefs.current[0]?.focus()
+      const msg =
+        e.response?.data?.errors?.['detail']?.[0] ??
+        e.response?.data?.detail ??
+        "Kod noto'g'ri yoki muddati tugagan."
+
+      if (msg.startsWith('EMAIL_ALREADY_CONFIRMED|')) {
+        setAlreadyConfirmed(true)
+        setError(null)
+      } else {
+        setError(msg)
+        setOtp(['', '', '', '', '', ''])
+        inputRefs.current[0]?.focus()
+      }
     } finally {
       setLoading(false)
     }
@@ -106,8 +117,16 @@ export default function VerifyEmailPage() {
       setOtp(['', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
     } catch (err) {
-      const e = err as AxiosError<ApiError>
-      setError(e.response?.data?.detail ?? 'Qayta yuborishda xatolik.')
+      const e   = err as AxiosError<ApiError>
+      const msg =
+        e.response?.data?.errors?.['detail']?.[0] ??
+        e.response?.data?.detail ??
+        'Qayta yuborishda xatolik.'
+      if (msg.startsWith('EMAIL_ALREADY_CONFIRMED|')) {
+        setAlreadyConfirmed(true)
+      } else {
+        setError(msg)
+      }
     } finally {
       setResending(false)
     }
@@ -266,7 +285,20 @@ export default function VerifyEmailPage() {
         )}
 
         {/* Xato / muvaffaqiyat */}
-        {error && (
+        {alreadyConfirmed && (
+          <Alert
+            type="success" showIcon
+            style={{ marginTop: 16, borderRadius: 8, textAlign: 'left' }}
+            message="Email allaqachon tasdiqlangan!"
+            description={
+              <span>
+                Siz allaqachon email tasdiqlagan yoki Google bilan kirgansiz.{' '}
+                <Link to="/login" style={{ fontWeight: 600 }}>Login sahifasiga o'ting →</Link>
+              </span>
+            }
+          />
+        )}
+        {!alreadyConfirmed && error && (
           <Alert message={error} type="error" showIcon closable
             onClose={() => setError(null)}
             style={{ marginTop: 16, borderRadius: 8, textAlign: 'left' }} />

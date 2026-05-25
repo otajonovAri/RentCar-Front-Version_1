@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Layout, Button, Avatar, Typography, Space,
   Tooltip, theme, Grid, Badge,
@@ -11,7 +11,6 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
-import { conversationsApi } from '@/api/conversationsApi'
 import { notificationsApi } from '@/api/notificationsApi'
 
 const { Header } = Layout
@@ -40,17 +39,23 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
 
   const isClient = role === 'Customer' || role === 'Owner'
 
-  // ── Unread counts (badge only) ──────────────────────────────────────────────
-  const [unreadMsgs,  setUnreadMsgs]  = useState(0)
-  const [unreadNotif, setUnreadNotif] = useState(0)
-  const totalUnread = unreadMsgs + unreadNotif
+  // ── Unread notification count + bell shake animation ─────────────────────────
+  const [unreadNotif,  setUnreadNotif]  = useState(0)
+  const [bellShakeKey, setBellShakeKey] = useState(0)
+  const prevNotifRef = useRef(0)
 
   const loadCounts = useCallback(() => {
     if (!userId) return
-    conversationsApi.getUnreadCount(userId)
-      .then(r => setUnreadMsgs(r.data)).catch(() => {})
     notificationsApi.getAll({ userId, page: 1, pageSize: 1, unreadOnly: true })
-      .then(r => setUnreadNotif(r.data.totalCount)).catch(() => {})
+      .then(r => {
+        const count = r.data.totalCount
+        setUnreadNotif(count)
+        if (count > prevNotifRef.current) {
+          setBellShakeKey(k => k + 1)
+        }
+        prevNotifRef.current = count
+      })
+      .catch(() => {})
   }, [userId])
 
   useEffect(() => {
@@ -90,15 +95,21 @@ export default function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
           />
         </Tooltip>
 
-        {/* 🔔 Bell — click → /notifications */}
-        <Badge count={totalUnread} size="small" offset={[-4, 4]}>
-          <Button
-            type="text" shape="circle"
-            icon={<BellOutlined style={{ fontSize: 18 }} />}
-            style={{ width: 40, height: 40 }}
-            onClick={() => navigate('/notifications')}
-          />
-        </Badge>
+        {/* 🔔 Bell — animatsiyali badge, click → /notifications */}
+        <div className={unreadNotif > 0 ? 'notif-badge-pulse' : ''}>
+          <Badge count={unreadNotif} size="small" offset={[-4, 4]}>
+            <Button
+              type="text" shape="circle"
+              icon={
+                <span key={bellShakeKey} className={bellShakeKey > 0 ? 'notif-bell-shake' : ''}>
+                  <BellOutlined style={{ fontSize: 18 }} />
+                </span>
+              }
+              style={{ width: 40, height: 40 }}
+              onClick={() => navigate('/notifications')}
+            />
+          </Badge>
+        </div>
 
         {/* User avatar — Customer/Owner mobile'da ko'rinmaydi (bottom nav'da profil bor) */}
         {!(isMobile && isClient) && (
