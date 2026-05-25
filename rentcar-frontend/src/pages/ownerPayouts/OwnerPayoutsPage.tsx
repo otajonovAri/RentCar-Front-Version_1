@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Button, Modal, Form, Input, InputNumber, Select, message,
+  Button, Modal, Form, Input, Select, message,
   Spin, Grid, theme,
 } from 'antd'
 import {

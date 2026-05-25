@@ -83,7 +83,7 @@ export default function CarDetailDrawer({ carId, onClose, onSuccess }: Props) {
     setUploading(true)
     try {
       const result = await uploadImage(file as File)
-      await carsApi.addImage(carId, { url: result.url, isMain: carImages.length === 0, displayOrder: carImages.length + 1 })
+      await carsApi.addImage(carId, { imageUrl: result.url, isMain: carImages.length === 0, displayOrder: carImages.length + 1 })
       message.success('Rasm muvaffaqiyatli yuklandi!')
       await reloadCar(carId); onSuccess(); done?.('ok')
     } catch (err: unknown) {
