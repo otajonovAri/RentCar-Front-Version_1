@@ -74,6 +74,8 @@ const menuItems: MenuItem[] = [
   { key: '/car-models',     icon: <AppstoreFilled />,          label: 'Modellar',            roles: ['Admin', 'SuperAdmin'] },
   { key: '/users',              icon: <CrownFilled />,             label: 'Foydalanuvchilar',        roles: ['Admin', 'SuperAdmin'] },
   { key: '/deletion-requests',  icon: <DeleteOutlined />,          label: "O'chirish so'rovlari",     roles: ['Admin', 'SuperAdmin'] },
+  { key: '/conversations',      icon: <MessageFilled />,           label: 'Xabarlar',                roles: ['Manager', 'Admin', 'SuperAdmin'] },
+  { key: '/notifications',      icon: <BellFilled />,              label: 'Bildirishnomalar',         roles: ['Manager', 'Admin', 'SuperAdmin'] },
 ]
 
 interface AppSiderProps {
