@@ -5,7 +5,11 @@
       "PowerShell($env:PATH)",
       "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"C:\\\\Program Files \\(x86\\)\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\\\\nodejs\" -ErrorAction SilentlyContinue)",
       "Bash(git -C \"D:/RentalCarSolution\\(FrontEnd\\)\" log --oneline --all)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(dotnet ef *)",
+      "Bash(mkdir -p \"D:\\\\RentalCarSolution\\\\src\\\\RentCar.Application\\\\Features\\\\Auth\\\\Commands\\\\ForgotPassword\")",
+      "Bash(mkdir -p \"D:\\\\RentalCarSolution\\\\src\\\\RentCar.Application\\\\Features\\\\Auth\\\\Commands\\\\ResetPassword\")",
+      "Bash(dotnet build *)"
     ]
   }
 }

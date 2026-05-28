@@ -69,6 +69,16 @@ export interface RegisterPendingDto {
   refreshToken?: string
 }
 
+export interface ForgotPasswordDto {
+  email: string
+}
+
+export interface ResetPasswordDto {
+  email: string
+  token: string
+  newPassword: string
+}
+
 export interface ApiError {
   status: number
   title: string

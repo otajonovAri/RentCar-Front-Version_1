@@ -1,7 +1,7 @@
 import api from './axiosInstance'
 import type {
   UserDto, UpdateProfileDto, UpdateLicenseDto, UpdateRoleDto, BlockUserDto, UsersFilter,
-  DeletionBlockingInfoDto, AccountDeletionRequestDto, UserFullHistoryDto
+  DeletionBlockingInfoDto, AccountDeletionRequestDto, UserFullHistoryDto, ChangePasswordDto,
 } from '@/types/users'
 import type { PaginatedResponse } from '@/types/common'
 
@@ -52,4 +52,7 @@ export const usersApi = {
 
   rejectDeletion: (userId: number, reason: string) =>
     api.patch<{ message: string }>(`/api/users/${userId}/reject-deletion`, { reason }),
+
+  changePassword: (userId: number, data: ChangePasswordDto) =>
+    api.put<void>(`/api/users/${userId}/password`, data),
 }

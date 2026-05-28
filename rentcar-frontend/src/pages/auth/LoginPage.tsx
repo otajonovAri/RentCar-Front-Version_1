@@ -289,7 +289,13 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <Link to="/forgot-password" style={{ fontSize: 13, color: '#8c8c8c' }}>
+            Parolni unutdingizmi?
+          </Link>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
           <Text type="secondary" style={{ fontSize: 13 }}>Hisob yo'qmi? </Text>
           <Link to="/register" style={{ fontSize: 13, fontWeight: 500 }}>
             Ro'yxatdan o'tish

@@ -46,6 +46,8 @@ const RegisterPage           = lazy(() => import('@/pages/auth/RegisterPage'))
 const VerifyEmailPage        = lazy(() => import('@/pages/auth/VerifyEmailPage'))
 const ConfirmEmailPage       = lazy(() => import('@/pages/auth/ConfirmEmailPage'))
 const ResendConfirmationPage = lazy(() => import('@/pages/auth/ResendConfirmationPage'))
+const ForgotPasswordPage     = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
+const ResetPasswordPage      = lazy(() => import('@/pages/auth/ResetPasswordPage'))
 
 // ── Sahifalar ─────────────────────────────────────────────────────────────────
 const DashboardPage    = lazy(() => import('@/pages/DashboardPage'))
@@ -102,6 +104,8 @@ const router = createBrowserRouter([
   { path: '/verify-email',        element: <L><VerifyEmailPage /></L> },
   { path: '/confirm-email',       element: <L><ConfirmEmailPage /></L> },
   { path: '/resend-confirmation',  element: <L><ResendConfirmationPage /></L> },
+  { path: '/forgot-password',     element: <L><ForgotPasswordPage /></L> },
+  { path: '/reset-password',      element: <L><ResetPasswordPage /></L> },
 
   // ─── Root: guest → /catalog, auth → dashboard/my-rentals ────────────────
   { path: '/', element: <RootRedirect /> },

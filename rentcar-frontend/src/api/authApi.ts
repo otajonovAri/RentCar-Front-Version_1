@@ -8,6 +8,8 @@ import type {
   ResendConfirmationDto,
   RefreshTokenDto,
   RegisterPendingDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from '@/types/auth'
 
 export const authApi = {
@@ -45,4 +47,10 @@ export const authApi = {
   /** Foydalanuvchini tizimdan chiqarish — refresh tokenni bekor qiladi */
   logout: () =>
     api.post<void>('/api/auth/logout'),
+
+  forgotPassword: (data: ForgotPasswordDto) =>
+    api.post<{ message: string }>('/api/auth/forgot-password', data),
+
+  resetPassword: (data: ResetPasswordDto) =>
+    api.post<{ message: string }>('/api/auth/reset-password', data),
 }

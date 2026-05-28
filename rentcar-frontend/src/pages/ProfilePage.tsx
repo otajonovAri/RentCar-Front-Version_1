@@ -12,6 +12,7 @@ import {
   CalendarOutlined, LoadingOutlined, StopOutlined, WarningFilled,
   DeleteOutlined, HistoryOutlined, ExclamationCircleOutlined,
   CarOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleFilled,
+  LockOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import dayjs from 'dayjs'
@@ -59,6 +60,7 @@ export default function ProfilePage() {
   const isMobile  = !screens.md
   const [form] = Form.useForm()
   const [licenseForm] = Form.useForm()
+  const [passwordForm] = Form.useForm()
 
   const [profile, setProfile]               = useState<UserDto | null>(null)
   const [loading, setLoading]               = useState(true)
@@ -68,6 +70,7 @@ export default function ProfilePage() {
   const [licenseSaving, setLicenseSaving]   = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [licenseImgUploading, setLicenseImgUploading] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   // ── Hisob o'chirish holati ────────────────────────────────────────────────
   const [deletionModalOpen, setDeletionModalOpen]   = useState(false)
@@ -201,6 +204,26 @@ export default function ProfilePage() {
       message.error('Guvohnomani yangilashda xatolik')
     } finally {
       setLicenseSaving(false)
+    }
+  }
+
+  // ── Parol o'zgartirish ────────────────────────────────────────────────────
+  const handleChangePassword = async () => {
+    const values = await passwordForm.validateFields()
+    if (!userId) return
+    setPasswordSaving(true)
+    try {
+      await usersApi.changePassword(userId, {
+        currentPassword: values.currentPassword,
+        newPassword:     values.newPassword,
+      })
+      message.success('Parol muvaffaqiyatli o\'zgartirildi!')
+      passwordForm.resetFields()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } }
+      message.error(e?.response?.data?.message ?? 'Parolni o\'zgartirishda xatolik')
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -750,6 +773,71 @@ export default function ProfilePage() {
               </Card>
             </Col>
 
+            {/* ── Xavfsizlik kartasi (mobile) ── */}
+            <Col xs={24}>
+              <Card
+                style={{ background: cardBg }}
+                styles={{ body: { padding: '16px' } }}
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <LockOutlined style={{ color: '#1677ff' }} />
+                    <span>Parol o'zgartirish</span>
+                  </div>
+                }
+              >
+                <Form form={passwordForm} layout="vertical">
+                  <Form.Item
+                    name="currentPassword"
+                    label="Joriy parol"
+                    rules={[{ required: true, message: 'Joriy parolni kiriting' }]}
+                  >
+                    <Input.Password placeholder="Joriy parolingiz" />
+                  </Form.Item>
+                  <Form.Item
+                    name="newPassword"
+                    label="Yangi parol"
+                    rules={[
+                      { required: true, message: 'Yangi parol kiriting' },
+                      { min: 6, message: "Parol kamida 6 ta belgidan iborat bo'lsin" },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('currentPassword') !== value) return Promise.resolve()
+                          return Promise.reject(new Error("Yangi parol joriy paroldan farq qilishi kerak"))
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password placeholder="Yangi parol" />
+                  </Form.Item>
+                  <Form.Item
+                    name="confirmPassword"
+                    label="Yangi parolni tasdiqlang"
+                    dependencies={['newPassword']}
+                    rules={[
+                      { required: true, message: 'Parolni tasdiqlang' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('newPassword') === value) return Promise.resolve()
+                          return Promise.reject(new Error('Parollar bir-biriga mos emas'))
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password placeholder="Parolni qayta kiriting" />
+                  </Form.Item>
+                  <Button
+                    type="primary"
+                    icon={<LockOutlined />}
+                    loading={passwordSaving}
+                    onClick={handleChangePassword}
+                    block
+                  >
+                    Parolni o'zgartirish
+                  </Button>
+                </Form>
+              </Card>
+            </Col>
+
             {/* ── Tarix kartasi (mobile) ── */}
             <Col xs={24}>
               <Card
@@ -824,6 +912,65 @@ export default function ProfilePage() {
                         )}
                         {licenseTab}
                       </>
+                    ),
+                  },
+                  {
+                    key: 'security',
+                    label: (
+                      <span><LockOutlined style={{ marginRight: 6 }} />Xavfsizlik</span>
+                    ),
+                    children: (
+                      <Form form={passwordForm} layout="vertical" style={{ maxWidth: 420, margin: '0 auto' }}>
+                        <Form.Item
+                          name="currentPassword"
+                          label="Joriy parol"
+                          rules={[{ required: true, message: 'Joriy parolni kiriting' }]}
+                        >
+                          <Input.Password size="large" placeholder="Joriy parolingiz" />
+                        </Form.Item>
+                        <Form.Item
+                          name="newPassword"
+                          label="Yangi parol"
+                          rules={[
+                            { required: true, message: 'Yangi parol kiriting' },
+                            { min: 6, message: "Parol kamida 6 ta belgidan iborat bo'lsin" },
+                            ({ getFieldValue }) => ({
+                              validator(_, value) {
+                                if (!value || getFieldValue('currentPassword') !== value) return Promise.resolve()
+                                return Promise.reject(new Error("Yangi parol joriy paroldan farq qilishi kerak"))
+                              },
+                            }),
+                          ]}
+                        >
+                          <Input.Password size="large" placeholder="Yangi parol" />
+                        </Form.Item>
+                        <Form.Item
+                          name="confirmPassword"
+                          label="Yangi parolni tasdiqlang"
+                          dependencies={['newPassword']}
+                          rules={[
+                            { required: true, message: 'Parolni tasdiqlang' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value) {
+                                if (!value || getFieldValue('newPassword') === value) return Promise.resolve()
+                                return Promise.reject(new Error('Parollar bir-biriga mos emas'))
+                              },
+                            }),
+                          ]}
+                        >
+                          <Input.Password size="large" placeholder="Parolni qayta kiriting" />
+                        </Form.Item>
+                        <Button
+                          type="primary"
+                          icon={<LockOutlined />}
+                          loading={passwordSaving}
+                          onClick={handleChangePassword}
+                          size="large"
+                          block
+                        >
+                          Parolni o'zgartirish
+                        </Button>
+                      </Form>
                     ),
                   },
                   {

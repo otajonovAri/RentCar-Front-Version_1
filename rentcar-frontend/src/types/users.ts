@@ -48,6 +48,11 @@ export interface BlockUserDto {
   blockedUntil?: string | null
 }
 
+export interface ChangePasswordDto {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface UsersFilter {
   page: number
   pageSize: number
