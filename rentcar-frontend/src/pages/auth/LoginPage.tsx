@@ -203,7 +203,6 @@ export default function LoginPage() {
             width="324"
             text="signin_with"
             shape="rectangular"
-            locale="uz"
           />
         </div>
 
