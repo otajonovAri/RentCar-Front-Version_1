@@ -112,4 +112,5 @@ export interface CarsFilter {
   minPrice?: number
   maxPrice?: number
   status?: CarStatus
+  transmissionType?: TransmissionType
 }

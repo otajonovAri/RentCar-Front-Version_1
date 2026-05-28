@@ -47,3 +47,25 @@ export interface InitiatePaymentResponse {
 export interface RefundPaymentDto {
   reason: string
 }
+
+export interface PaymentHistoryDto {
+  paymentId:       number
+  rentalId:        number
+  customerName:    string
+  carInfo:         string
+  amount:          number
+  method:          PaymentMethod
+  status:          PaymentStatus
+  transactionId:   string | null
+  externalOrderId: string | null
+  createdAt:       string
+  paidAt:          string | null
+  refundedAt:      string | null
+  refundReason:    string | null
+}
+
+export interface PaymentsFilter {
+  page?:     number
+  pageSize?: number
+  status?:   PaymentStatus
+}

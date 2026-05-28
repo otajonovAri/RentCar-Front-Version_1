@@ -11,7 +11,8 @@
       "Bash(mkdir -p \"D:\\\\RentalCarSolution\\\\src\\\\RentCar.Application\\\\Features\\\\Auth\\\\Commands\\\\ResetPassword\")",
       "Bash(dotnet build *)",
       "Bash(npm install *)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(dir /s /b \"D:\\\\RentalCarSolution\\(FrontEnd\\)\\\\rentcar-frontend\\\\src\\\\pages\\\\*.tsx\")"
     ]
   }
 }

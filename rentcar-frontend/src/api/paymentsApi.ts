@@ -2,7 +2,9 @@ import api from './axiosInstance'
 import type {
   PaymentDto, PendingPaymentDto, CreatePaymentDto,
   InitiatePaymentDto, InitiatePaymentResponse, RefundPaymentDto,
+  PaymentHistoryDto, PaymentsFilter,
 } from '@/types/payments'
+import type { PaginatedResponse } from '@/types/common'
 
 export const paymentsApi = {
   getByRental: (rentalId: number) =>
@@ -26,4 +28,8 @@ export const paymentsApi = {
   // Admin/SuperAdmin: to'lovni qaytarish (refund)
   refund: (paymentId: number, data: RefundPaymentDto) =>
     api.post<void>(`/api/payments/${paymentId}/refund`, data),
+
+  // Admin/SuperAdmin: barcha to'lovlar tarixi (paginated)
+  getAll: (params?: PaymentsFilter) =>
+    api.get<PaginatedResponse<PaymentHistoryDto>>('/api/payments', { params }),
 }
