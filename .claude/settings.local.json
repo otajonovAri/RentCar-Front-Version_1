@@ -12,7 +12,10 @@
       "Bash(dotnet build *)",
       "Bash(npm install *)",
       "Bash(npm list *)",
-      "Bash(dir /s /b \"D:\\\\RentalCarSolution\\(FrontEnd\\)\\\\rentcar-frontend\\\\src\\\\pages\\\\*.tsx\")"
+      "Bash(dir /s /b \"D:\\\\RentalCarSolution\\(FrontEnd\\)\\\\rentcar-frontend\\\\src\\\\pages\\\\*.tsx\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
