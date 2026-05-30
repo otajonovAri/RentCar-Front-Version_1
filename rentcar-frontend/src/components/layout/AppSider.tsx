@@ -10,7 +10,7 @@ import {
   UnorderedListOutlined, AuditOutlined, PercentageOutlined,
   SolutionOutlined, MessageFilled, BellFilled,
   LogoutOutlined, DeleteOutlined, ExclamationCircleOutlined,
-  CheckCircleOutlined, HistoryOutlined,
+  CheckCircleOutlined, HistoryOutlined, BarChartOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
@@ -57,6 +57,7 @@ const menuItems: MenuItem[] = [
   { key: '/reservations',   icon: <CalendarFilled />,          label: 'Rezervatsiyalar',     roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/rentals',        icon: <FileTextFilled />,          label: 'Ijaralar',            roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/payments',       icon: <DollarCircleFilled />,      label: "To'lovlar",           roles: ['Manager', 'Admin', 'SuperAdmin'] },
+  { key: '/reports',        icon: <BarChartOutlined />,        label: 'Hisobotlar',           roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/inspections',    icon: <ThunderboltFilled />,       label: "Texnik ko'riklar",    roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/fines',          icon: <WarningFilled />,           label: 'Jarimalar',           roles: ['Manager', 'Admin', 'SuperAdmin'] },
   { key: '/damage-reports', icon: <AuditOutlined />,           label: 'Zarar hisobotlari',   roles: ['Manager', 'Admin', 'SuperAdmin'] },

@@ -76,6 +76,7 @@ const ConversationsPage = lazy(() => import('@/pages/conversations/Conversations
 const OwnerPortalPage   = lazy(() => import('@/pages/ownerPortal/OwnerPortalPage'))
 
 // ── Manager+ ─────────────────────────────────────────────────────────────────
+const ReportsPage           = lazy(() => import('@/pages/reports/ReportsPage'))
 const PaymentsPage          = lazy(() => import('@/pages/payments/PaymentsPage'))
 const InspectionsPage       = lazy(() => import('@/pages/inspections/InspectionsPage'))
 const DamageReportsPage     = lazy(() => import('@/pages/damageReports/DamageReportsPage'))
@@ -150,6 +151,7 @@ const router = createBrowserRouter([
           {
             element: <PrivateRoute allowedRoles={['Manager', 'Admin', 'SuperAdmin']} />,
             children: [
+              { path: '/reports',        element: <L><ReportsPage /></L> },
               { path: '/payments',       element: <L><PaymentsPage /></L> },
               { path: '/inspections',    element: <L><InspectionsPage /></L> },
               { path: '/damage-reports', element: <L><DamageReportsPage /></L> },
